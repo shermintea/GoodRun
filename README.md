@@ -20,7 +20,6 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-<<<<<<< HEAD
 ## Database Setup
 
 This project uses mySQL for database management. For testing in current stage, set up a local mySQL server with the following steps.
@@ -73,8 +72,6 @@ npx tsx scripts/addUser.ts
 > Run this script to insert all test users to local mySQL table
 
 
-=======
->>>>>>> 1612cd6 (Initial commit from Create Next App)
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
@@ -89,7 +86,6 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-<<<<<<< HEAD
 
 ## Project Architecture
 ```pgsql
@@ -125,5 +121,3 @@ Folder descriptions:
 - *lib/* contains database connection code 
 - *scripts/* contains utility scripts such as addUser.ts
 - *app/api/* handles the backend login API
-=======
->>>>>>> 1612cd6 (Initial commit from Create Next App)
