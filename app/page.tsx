@@ -27,11 +27,11 @@ export default function Home() {
           <Image
             src="/mpLogo.png"         
             alt="Medical Pantry logo"
-            width={40}              
-            height={40}             
+            width={65}
+            height={65}
             className="rounded-md" 
           />
-          <span className="text-xl font-semibold tracking-tight">
+          <span className="text-2xl font-semibold tracking-tight">
             Medical Pantry
           </span>
         </a>
