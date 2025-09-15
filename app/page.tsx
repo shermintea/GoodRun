@@ -21,22 +21,22 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50">
       {/* Top banner / header */}
       <header className="bg-[#171e3a] text-white">
-      <div className="mx-auto max-w-6xl px-6 py-6 flex items-center gap-3">
-        <a href="/" className="flex items-center gap-2">
-          {/* Logo */}
-          <Image
-            src="/mpLogo.png"         
-            alt="Medical Pantry logo"
-            width={65}
-            height={65}
-            className="rounded-md" 
-          />
-          <span className="text-2xl font-semibold tracking-tight">
-            Medical Pantry
-          </span>
-        </a>
-      </div>
-    </header>
+        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center gap-3">
+          <a href="/" className="flex items-center gap-2">
+            {/* Logo */}
+            <Image
+              src="/mpLogo.png"
+              alt="Medical Pantry logo"
+              width={85}
+              height={85}
+              className="rounded-md"
+            />
+            <span className="text-3xl font-semibold tracking-tight">
+              Medical Pantry
+            </span>
+          </a>
+        </div>
+      </header>
 
       {/* Body */}
       <section className="mx-auto max-w-6xl px-6 py-10">

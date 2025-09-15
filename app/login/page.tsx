@@ -24,11 +24,11 @@ export default function LoginPage() {
             <Image
               src="/mpLogo.png"
               alt="Medical Pantry logo"
-              width={65}
-              height={65}
+              width={85}
+              height={85}
               className="rounded-md"
             />
-            <span className="text-2xl font-semibold tracking-tight">
+            <span className="text-3xl font-semibold tracking-tight">
               Medical Pantry
             </span>
           </a>
@@ -79,7 +79,7 @@ export default function LoginPage() {
             </button>
 
             {/* Forgot password */}
-            <p className="mt-6 text-sm text-left">
+            <p className="mt-0 text-sm text-left">
               <a
                 href="/reset-password"
                 className="text-black underline hover:text-red-600"
