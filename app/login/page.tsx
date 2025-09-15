@@ -36,7 +36,7 @@ export default function LoginPage() {
       </header>
 
       {/* Login form */}
-      <section className="mx-auto max-w-md px-6 mt-20">
+      <section className="mx-auto max-w-md px-6 mt-40">
         <div className="rounded-xl border border-gray-200 bg-white px-8 py-10 shadow-sm">
           <form className="flex flex-col gap-6">
             {/* Email */}
