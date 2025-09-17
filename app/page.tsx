@@ -53,9 +53,10 @@ export default function Home() {
               </p>
 
               <p className="mt-6 text-sm leading-6 text-gray-700">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-                nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                By connecting communities and reducing waste, GoodRun ensures that vital
+                resources are redirected to people who need them most. Every delivery
+                helps strengthen healthcare access, protect the environment, and support
+                vulnerable communities across Victoria.
               </p>
             </div>
           </div>
