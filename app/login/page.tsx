@@ -11,10 +11,47 @@
 * v1.0 - 11-09-2025 - Initial implementation of login UI
 *******************************************************/
 
+// enables state and fetch
+"use client"
 
 import Image from "next/image";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    try {
+      const res = await fetch("api/login", {
+        method: "POST",
+        headers: { "Content-Type": "applications/json" },
+        body: JSON.stringify({ email, password }),
+      }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        console.log("Login success:", data);
+        // redirect to dashboard or home page
+        router.push("/dashboard");
+      } else {
+        setError(data.error || "Login failed");
+      }
+
+    } catch (err) {
+      console.error(err);
+      setError("Server error");
+    }
+  };
+
+  // Front-end page render
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Top banner */}
@@ -38,7 +75,8 @@ export default function LoginPage() {
       {/* Login form */}
       <section className="mx-auto max-w-md px-6 mt-40">
         <div className="rounded-xl border border-gray-200 bg-white px-8 py-10 shadow-sm">
-          <form className="flex flex-col gap-6">
+          <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+
             {/* Email */}
             <div className="flex flex-col gap-2">
               <label
@@ -51,6 +89,9 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="Value"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
@@ -66,11 +107,15 @@ export default function LoginPage() {
               <input
                 id="password"
                 type="password"
-                placeholder="Value"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               className="w-full mt-2 rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/40"
@@ -87,9 +132,14 @@ export default function LoginPage() {
                 Forgot password?
               </a>
             </p>
+
+            {/* Error message */}
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+
           </form>
         </div>
       </section>
     </main>
   );
+
 }
