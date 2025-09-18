@@ -63,17 +63,7 @@ export default function Home() {
 
           {/* Right: calls-to-action */}
           <div className="flex flex-col items-start">
-            <div>
-              <h3 className="font-semibold">Join Us Today</h3>
-              <a
-                href="/signup"
-                className="mt-3 inline-block rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/40"
-              >
-                Volunteer
-              </a>
-            </div>
-
-            <div className="mt-12">
+            <div className="mt-6">
               <h3 className="font-semibold">Existing Volunteers</h3>
               <a
                 href="/login"
