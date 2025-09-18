@@ -1,16 +1,16 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      “Filename”
+* File:      page.tsx
 * Author:    It Project - medical pantry - group 17
 * Date:      11-09-2025
-* Version:   1.0
+* Version:   1.1
 * Purpose:   Handles volunteer registration, login authentication,
 *            assignment of delivery requests to volunteers,
 *            real-time checking of the delivery status,
 *            (extend description if more functionalities are added).
 * Revisions:
-* v1.0 - Date - Initial implementation
-* …
+* v1.0 - 11-09-2025 - Initial implementation of the initial page
+* v1.1 - 18-09-2029 - Made changes to the GoodRun description 
 *******************************************************/
 
 
