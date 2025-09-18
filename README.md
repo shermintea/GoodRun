@@ -24,7 +24,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 This project uses mySQL for database management. For testing in current stage, set up a local mySQL server with the following steps.
 
-1. Create .env.local file at root of repository:
+1. Create .env.local file at root of repository
 ```.env.local
 DB_HOST=localhost
 DB_USER=root
@@ -32,11 +32,12 @@ DB_PASSWORD=your_password
 DB_NAME=good_run
 DB_PORT=3306
 ```
-replace your_password with local mySQL server password.
+> replace your_password with local mySQL server password.
 
-2. Install dependencies
-Install *mySQL* if not already installed: (for macOS with Homebrew)
+2. Install dependencies\
+Install *mySQL* 
 ```bash
+# for macOS with Homebrew
 brew install mysql
 brew services start mysql
 ```
@@ -45,12 +46,12 @@ Install *npm*
 npm install
 ```
 
-3. Start mySQL
-Connect to mySQL
+3. Connect to mySQL
 ```bash
 mysql -u root -p
 ```
-Create the database and table
+
+4. Create the database and table
 ```sql
 CREATE DATABASE good_run;
 
@@ -64,11 +65,11 @@ CREATE TABLE users (
 );
 ```
 
-4. Add test users
-Run the following script to insert all test users to local mySQL table
+5. Add test users
 ```bash
 npx tsx scripts/addUser.ts
 ```
+> Run this script to insert all test users to local mySQL table
 
 
 ## Learn More
@@ -114,8 +115,9 @@ Team-17-Medical-Pantry/
 ├── tsconfig.json
 └── README.md
 ```
-app/ contains Next.js pages
-components/ contains reusable UI elements
-lib/ contains database connection code 
-scripts/ contains utility scripts such as addUser.ts
-app/api/ handles the backend login API
+Folder descriptions:
+- *app/* contains Next.js pages
+- *components/* contains reusable UI elements
+- *lib/* contains database connection code 
+- *scripts/* contains utility scripts such as addUser.ts
+- *app/api/* handles the backend login API
