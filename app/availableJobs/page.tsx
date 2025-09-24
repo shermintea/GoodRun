@@ -1,6 +1,6 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      adminJobDetails/page.tsx
+* File:      availableJobs/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      24-09-2025
 * Version:   1.0
@@ -57,7 +57,7 @@ export default function AvailableJobsPage() {
 
                     {/* Scrollable job list */}
                     <div className="md:col-span-3">
-                        <div className="h-[600px] w-full rounded-lg border border-gray-200 bg-slate-100 text-slate-600 px-4 py-4 overflow-y-auto space-y-4">
+                        <div className="h-[400px] md:h-[600px] w-full rounded-lg border border-gray-200 bg-slate-100 text-slate-600 px-4 py-4 overflow-y-auto space-y-4">
                             {/* Job cards */}
                             <a
                                 href="/job"
