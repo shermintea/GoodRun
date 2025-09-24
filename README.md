@@ -83,21 +83,21 @@ Team-17-Medical-Pantry/
 │   ├── page.tsx
 │   ├── login/
 │   │   └── page.tsx
-│   ├── api/
-│   │   └── login/
-│   │       └── route.ts
-├── components/
-│   ├── CTASection.tsx
-│   ├── EventsTeaser.tsx
-│   ├── FeatureGrid.tsx
-│   ├── Footer.tsx
-│   ├── Hero.tsx
-│   ├── NavBar.tsx
-│   └── StatBar.tsx
+│   └── api/
+│       └── login/
+│           └── route.ts
+│       └── job/
+│           └── route.ts
+├── components/...
 ├── lib/
 │   └── db.ts
 ├── scripts/
-│   └── addUser.ts
+│   ├── createJobsTable.ts
+│   ├── createUsersTable.ts
+│   ├── seedJobs.ts
+│   ├── seedUsers.ts
+│   └── setupDb.tsx
+├── .env.local
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -106,5 +106,5 @@ Folder descriptions:
 - *app/* contains Next.js pages
 - *components/* contains reusable UI elements
 - *lib/* contains database connection code 
-- *scripts/* contains utility scripts such as addUser.ts
+- *scripts/* contains utility scripts
 - *app/api/* handles the backend login API
