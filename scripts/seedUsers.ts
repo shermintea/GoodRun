@@ -1,6 +1,20 @@
+/*******************************************************
+*Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+*File:      scripts/seedUsers.ts  
+*Author:    IT Project – Medical Pantry – Group 17
+*Date:      24-09-2025
+*Version:   1.1
+*Purpose:   Inserts list of test users into local MySQL Users Table
+*Revisions:
+*v1.0 - 18-09-2025 - Initial implementation
+*v1.1 - 24-09/2025 - Refactored and added master script
+*******************************************************/
+
 import bcrypt from 'bcryptjs';
 import db from '../lib/db';
 
+//  Function:   “seedUsers”
+//  Purpose:    Initialises a list of test users and insert new entries into MySQL table.
 export async function seedUsers() {
 
     // List of test users

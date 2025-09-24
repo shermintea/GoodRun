@@ -1,6 +1,21 @@
+/*******************************************************
+*Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+*File:      scripts/seedJobs.ts  
+*Author:    IT Project – Medical Pantry – Group 17
+*Date:      24-09-2025
+*Version:   1.0
+*Purpose:   Inserts list of test jobs into local MySQL Jobs table
+*Revisions:
+*v1.0 - 24-09-2025 - Initial implementation
+*******************************************************/
+
 import db from '../lib/db';
 
+//  Function:   “seedJobs”
+//  Purpose:    Initialises a list of test jobs and insert new entries into MySQL table.
 export async function seedJobs() {
+
+    // list of test jobs
     const jobs = [
         {
             assigned_to: 'jeslyn@example.com',
@@ -24,6 +39,7 @@ export async function seedJobs() {
         },
     ];
 
+    // Check if job already exists, insert if not
     for (const job of jobs) {
         const [rows] = await db.query(
             'SELECT id FROM jobs WHERE assigned_to = ? AND deadline_date = ?',

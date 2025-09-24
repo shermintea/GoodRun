@@ -1,3 +1,15 @@
+/*******************************************************
+*Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+*File:      tsconfig.json
+*Author:    IT Project – Medical Pantry – Group 17
+*Date:      18-09-2025
+*Version:   1.0
+*Purpose:   TypeScript compiler configuration for the project.
+*           Defines compiler options, module resolution,
+*           path aliases, and included/excluded files.
+*Revisions:
+*v1.0 - 18-09-2025 - Initial configuration
+*******************************************************/
 {
   "compilerOptions": {
     "target": "ES2017",
