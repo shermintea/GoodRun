@@ -32,16 +32,17 @@ DB_PASSWORD=your_password
 DB_NAME=good_run
 DB_PORT=3306
 ```
-> replace your_password with local mySQL server password.
+> Replace your_password with local mySQL server password.
 
-2. Install dependencies\
-Install *mySQL* 
+2. Install dependencies
+
+> Install *mySQL* 
 ```bash
 # for macOS with Homebrew
 brew install mysql
 brew services start mysql
 ```
-Install *npm*
+> Install *npm*
 ```bash
 npm install
 ```
@@ -51,23 +52,9 @@ npm install
 mysql -u root -p
 ```
 
-4. Create the database and table
-```sql
-CREATE DATABASE good_run;
-
-USE good_run;
-
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-5. Add test users
+4. Setup Database 
 ```bash
-npx tsx scripts/addUser.ts
+npx tsx scripts/setupDb.ts
 ```
 > Run this script to insert all test users to local mySQL table
 
