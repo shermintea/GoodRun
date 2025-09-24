@@ -1,3 +1,21 @@
+/*******************************************************
+* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+* File:      page.tsx
+* Author:    It Project - medical pantry - group 17
+* Date:      23-09-2025
+* Version:   1.1
+* Purpose:   Profile Page 
+*            - Display Personal information of volunteer/admin 
+*            - Users are able to edit the details
+*            - Users are able to use basic settings - locations access & notifications
+* 
+* Note: To Integrate Zendesk into the code(extract information of users)
+* 
+* Revisions:
+* v1.0 - 24-09-2025 - Initial implementation of basic layout of profile page
+* v1.1 - 24-09-2025 - Add Editing Function to personal details 
+*******************************************************/
+
 'use client';
 
 import { useState } from 'react';
@@ -56,8 +74,8 @@ export default function ProfilePage() {
             <Image
               src="/grLogo-transparent.png"
               alt="Medical Pantry Logo"
-              width={56}
-              height={56}
+              width={64}
+              height={64}
               priority
             />
           </Link>
