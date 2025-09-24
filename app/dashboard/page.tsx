@@ -83,7 +83,7 @@ export default function DashboardPage() {
                                         No active jobs at the moment.
                                     </p>
                                     <a
-                                        href="/jobs"
+                                        href="/availableJobs"
                                         className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium hover:bg-white"
                                     >
                                         Find jobs
