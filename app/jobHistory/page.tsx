@@ -57,7 +57,7 @@ export default function JobHistoryPage() {
 
                     {/* Scrollable job list */}
                     <div className="md:col-span-3">
-                        <div className="h-[600px] w-full rounded-lg border border-gray-200 bg-slate-100 text-slate-600 px-4 py-4 overflow-y-auto space-y-4">
+                        <div className="h-[500px] md:h-[600px] w-full rounded-lg border border-gray-200 bg-slate-100 text-slate-600 px-4 py-4 overflow-y-auto space-y-4">
                             {/* Job cards */}
                             <a
                                 href="/job"
