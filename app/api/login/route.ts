@@ -1,7 +1,25 @@
+/*******************************************************
+*Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+*File:      app/api/login/route.ts  
+*Author:    IT Project – Medical Pantry – Group 17
+*Date:      18-09-2025
+*Version:   1.0
+*Purpose:   Backend Login request handler.
+*           Verifies user credentials against the DB.
+*           Protects passwords by using bcrypt hashing.
+*           Serves as entry point for authentication.
+*Revisions:
+*v1.0 - 18-09-2025 - Initial implementation
+*******************************************************/
+
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
+//  Function:   POST
+//  Purpose:    Handles user login by validating credentials against the database.
+//  Params:     req (NextRequest) - the incoming HTTP request containing email and password.
+//  Returns:    NextResponse - JSON response with success or error message, and user ID if successful.
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
 
