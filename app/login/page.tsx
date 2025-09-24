@@ -11,7 +11,6 @@
 * v1.0 - 11-09-2025 - Initial implementation of login UI
 *******************************************************/
 
-<<<<<<< HEAD
 // enables state and fetch
 "use client"
 
@@ -53,14 +52,6 @@ export default function LoginPage() {
   };
 
   // Front-end page render
-=======
-
-import Image from "next/image";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
-export default function LoginPage() {
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Top banner */}
@@ -70,19 +61,11 @@ export default function LoginPage() {
             <Image
               src="/mpLogo.png"
               alt="Medical Pantry logo"
-<<<<<<< HEAD
               width={85}
               height={85}
               className="rounded-md"
             />
             <span className="text-3xl font-semibold tracking-tight">
-=======
-              width={65}
-              height={65}
-              className="rounded-md"
-            />
-            <span className="text-2xl font-semibold tracking-tight">
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
               Medical Pantry
             </span>
           </a>
@@ -90,16 +73,10 @@ export default function LoginPage() {
       </header>
 
       {/* Login form */}
-<<<<<<< HEAD
       <section className="mx-auto max-w-md px-6 mt-40">
         <div className="rounded-xl border border-gray-200 bg-white px-8 py-10 shadow-sm">
           <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
 
-=======
-      <section className="mx-auto max-w-md px-6 mt-20">
-        <div className="rounded-xl border border-gray-200 bg-white px-8 py-10 shadow-sm">
-          <form className="flex flex-col gap-6">
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
             {/* Email */}
             <div className="flex flex-col gap-2">
               <label
@@ -112,12 +89,9 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="Value"
-<<<<<<< HEAD
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-=======
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
                 className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
@@ -133,22 +107,15 @@ export default function LoginPage() {
               <input
                 id="password"
                 type="password"
-<<<<<<< HEAD
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-=======
-                placeholder="Value"
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
                 className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
 
-<<<<<<< HEAD
             {/* Submit */}
-=======
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
             <button
               type="submit"
               className="w-full mt-2 rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/40"
@@ -157,11 +124,7 @@ export default function LoginPage() {
             </button>
 
             {/* Forgot password */}
-<<<<<<< HEAD
             <p className="mt-0 text-sm text-left">
-=======
-            <p className="mt-6 text-sm text-left">
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
               <a
                 href="/reset-password"
                 className="text-black underline hover:text-red-600"
@@ -169,20 +132,13 @@ export default function LoginPage() {
                 Forgot password?
               </a>
             </p>
-<<<<<<< HEAD
 
             {/* Error message */}
             {error && <p className="text-red-600 text-sm">{error}</p>}
 
-=======
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
           </form>
         </div>
       </section>
     </main>
   );
-<<<<<<< HEAD
-
-=======
->>>>>>> 5ae33a5 (MFLP-23 Implement volunteer login page UI)
 }
