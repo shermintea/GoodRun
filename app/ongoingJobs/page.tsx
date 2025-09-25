@@ -1,26 +1,22 @@
-/*******************************************************
+/*****************************************************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      page.tsx
-* Author:    It Project - medical pantry - group 17
-* Date:      24-09-2025
-* Version:   1.0
-* Purpose:   Profile Page 
-*            - Display list of currently accepted jobs
-*            - Show job source (stored in DB vs admin-created)
-*            - Provide actions: Confirm Pickup / Confirm Drop Off, View Details
-*            - Mobile-first cards with desktop-friendly layout
-*            
+* File:      page.tsx  (Accepted/Ongoing Jobs)
+* Author:    IT Project – Medical Pantry – Group 17
+* Date:      25-09-2025
+* Version:   1.1
+* Purpose:   - Display list of currently accepted jobs 
+*            - Show job source (stored in DB vs admin-created) 
+*            - Provide actions: Confirm Pickup / Confirm Drop Off, View Details 
 * 
-* Note: To Integrate PickUP Request Database into the code(extract information of users)
-*     - Uses mock data for now. Includes a commented block
-*       prepared for mapping/fetching from a real DB/API.
-*     - Header shows centered 72px logo with Dashboard/Profile shortcuts.
-*     - Replace mock handler with API POST when integrating backend.
+* Note: To Integrate PickUP Request Database into the code(extract information of users) 
+*         - Uses mock data for now. Includes a commented out block 
+*         prepared for mapping/fetching from a real DB/API.
 * 
-* Revisions:
+* Revisions: 
 * v1.0 - 24-09-2025 - Initial implementation of basic layout of ongoing job page
-*******************************************************/
-
+* v1.1 - 25-09-2025 - Logo placement & Interaction: clicking "Confirm Pickup" changes the job status to
+                      "DROPOFF" and the button label updates to "Confirm Drop Off".
+*******************************************************************************************/
 
 'use client';
 
@@ -37,124 +33,81 @@ type JobItem = {
   status: JobStatus;
   address: string;
   pickupTime: string; // ISO or display string
-  source: SourceType; // whether it's stored in DB or created by admin only
+  source: SourceType;
 };
 
 export default function AcceptedJobsPage() {
-  /** ---------------------------------------------
-   *  MOCK DATA for layout (what users see right now)
-   *  --------------------------------------------*/
-  const [jobs] = useState<JobItem[]>([
-    {
-      id: '1',
-      name: 'Item name',
-      status: 'DROPOFF',
-      address: '12 Example St, Melbourne VIC',
-      pickupTime: 'Today 4:30 PM',
-      source: 'stored',
-    },
-    {
-      id: '2',
-      name: 'Item name',
-      status: 'DROPOFF',
-      address: '45 River Rd, Carlton VIC',
-      pickupTime: 'Today 5:15 PM',
-      source: 'admin_temp',
-    },
-    {
-      id: '3',
-      name: 'Item name',
-      status: 'PICKUP',
-      address: '88 Station St, Fitzroy VIC',
-      pickupTime: 'Tomorrow 9:00 AM',
-      source: 'stored',
-    },
-    {
-      id: '4',
-      name: 'Item name',
-      status: 'PICKUP',
-      address: '5 King St, Docklands VIC',
-      pickupTime: 'Tomorrow 11:00 AM',
-      source: 'admin_temp',
-    },
+  // --- Mock data for layout ---
+  const [jobs, setJobs] = useState<JobItem[]>([
+    { id: '1', name: 'Item name', status: 'DROPOFF', address: '12 Example St, Melbourne VIC', pickupTime: 'Today 4:30 PM', source: 'stored' },
+    { id: '2', name: 'Item name', status: 'DROPOFF', address: '45 River Rd, Carlton VIC', pickupTime: 'Today 5:15 PM', source: 'admin_temp' },
+    { id: '3', name: 'Item name', status: 'PICKUP',  address: '88 Station St, Fitzroy VIC',  pickupTime: 'Tomorrow 9:00 AM', source: 'stored' },
+    { id: '4', name: 'Item name', status: 'PICKUP',  address: '5 King St, Docklands VIC',   pickupTime: 'Tomorrow 11:00 AM', source: 'admin_temp' },
   ]);
 
-  // Simple sort example (replace with real logic when pickupTime is ISO)
   const sorted = useMemo(() => jobs.slice(), [jobs]);
 
-  /** ------------------------------------------------------------
-   *  🔒 FUTURE (DB/API): Replace the mock above with real data
-   *  ------------------------------------------------------------
-   *  Create an API route like: app/api/jobs/accepted/route.ts (GET)
-   *  Then fetch here (or in a Server Component) and map to JobItem.
-   *
-   *  // Example client fetch (uncomment when API exists):
-   *  import { useEffect } from 'react';
-   *  const [jobs, setJobs] = useState<JobItem[]>([]);
-   *  useEffect(() => {
-   *    fetch('/api/jobs/accepted')
-   *      .then(r => r.json())
-   *      .then((data: JobItem[]) => setJobs(data))
-   *      .catch(console.error);
-   *  }, []);
-   *
-   *  // Ensure your API returns objects shaped like:
-   *  // { id, name, status: 'PICKUP'|'DROPOFF', address, pickupTime, source: 'stored'|'admin_temp' }
-   *  ------------------------------------------------------------*/
-
+  // When user confirms:
+  // - If status is PICKUP => flip to DROPOFF (and UI will show "Awaiting drop off")
+  // - If status is already DROPOFF => keep as DROPOFF (no change here)
   const onConfirm = (job: JobItem) => {
-    // TODO: Replace with API call to confirm pickup/drop-off for job.id
-    // await fetch(`/api/jobs/${job.id}/confirm`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ type: job.status }),
-    // });
-    alert(`${job.status === 'PICKUP' ? 'Pickup' : 'Drop Off'} confirmed for "${job.name}" (mock)`);
+    setJobs(prev =>
+      prev.map(j =>
+        j.id === job.id
+          ? { ...j, status: j.status === 'PICKUP' ? 'DROPOFF' : 'DROPOFF' }
+          : j
+      )
+    );
+
+    // Mock feedback
+    alert(
+      `${
+        job.status === 'PICKUP' ? 'Pickup' : 'Drop Off'
+      } confirmed for "${job.name}" (mock)`
+    );
   };
 
   return (
     <main className="min-h-screen bg-neutral-100 text-neutral-900">
-      {/* Header with centered logo (>= 64px) and right-side shortcuts */}
+      {/* Header: logo left, blue ellipse buttons on right */}
       <header className="bg-white">
-        <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-3xl px-4 md:px-6 lg:px-8 py-5">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-            {/* Left spacer keeps logo centered */}
-            <div aria-hidden />
+        <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-3xl px-4 md:px-6 lg:px-8 py-5 flex items-center justify-between">
+          {/* Left: GoodRun logo (link home) */}
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/grLogo-transparent.png"
+              alt="GoodRun logo"
+              width={72}
+              height={72}
+              priority
+            />
+          </Link>
 
-            {/* Center: Logo */}
-            <div className="justify-self-center">
-              <Link href="/" className="flex items-center">
-                <Image
-                  src="/grLogo-transparent.png"
-                  alt="Medical Pantry"
-                  width={72}  // >64px
-                  height={72}
-                  priority
-                />
-              </Link>
-            </div>
-
-            {/* Right: Shortcuts */}
-            <nav className="justify-self-end flex items-center gap-6 text-sm md:text-base font-medium text-neutral-700">
-              <Link href="/dashboard" className="hover:text-neutral-900 transition-colors">
-                Dashboard
-              </Link>
-              <Link href="/profile" className="hover:text-neutral-900 transition-colors">
-                Profile
-              </Link>
-            </nav>
-          </div>
+          {/* Right: Actions (blue ellipse buttons) */}
+          <nav className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-full bg-[#11183A] px-4 py-2 text-white text-sm md:text-base font-medium hover:opacity-90 transition"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/profile"
+              className="rounded-full bg-[#11183A] px-4 py-2 text-white text-sm md:text-base font-medium hover:opacity-90 transition"
+            >
+              Profile
+            </Link>
+          </nav>
         </div>
       </header>
 
-      {/* Navy banner background like your mock */}
+      {/* Navy banner background */}
       <section className="bg-[#11183A]">
         <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-3xl px-4 md:px-6 lg:px-8 py-6 space-y-5">
           {sorted.map((job) => (
             <JobCard key={job.id} job={job} onConfirm={onConfirm} />
           ))}
 
-          {/* Optional: empty state */}
           {sorted.length === 0 && (
             <div className="rounded-2xl bg-white p-6 text-center text-neutral-600 shadow-sm">
               No accepted jobs at the moment.
@@ -176,9 +129,6 @@ function JobCard({
   onConfirm: (job: JobItem) => void;
 }) {
   const confirmLabel = job.status === 'PICKUP' ? 'Confirm Pickup' : 'Confirm Drop Off';
-  const pillColor =
-    job.status === 'PICKUP' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-600 hover:bg-red-700';
-
   const sourceBadge =
     job.source === 'stored'
       ? { text: 'Stored in DB', classes: 'bg-emerald-100 text-emerald-700' }
@@ -211,7 +161,7 @@ function JobCard({
         <div className="flex gap-3 justify-start sm:justify-end">
           <button
             onClick={() => onConfirm(job)}
-            className={`rounded-xl ${pillColor} px-4 py-2 text-white text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700`}
+            className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-white text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700"
           >
             {confirmLabel}
           </button>

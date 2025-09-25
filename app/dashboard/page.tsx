@@ -3,7 +3,7 @@
 * File:      dashboard/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      15-09-2025
-* Version:   1.2
+* Version:   1.3
 * Purpose:   Volunteer dashboard with consistent header,
 *            profile button, welcome message, jobs overview,
 *            and map placeholder.
@@ -11,38 +11,33 @@
 * v1.0 - Initial dashboard layout 
 * v1.1 - Added welcome banner and profile button at top right
 * v1.2 - Conditional ongoing job state (active vs none)
+* v1.3 - Link to all other pages & profile, replaced logo
 *******************************************************/
-
 
 import Image from "next/image";
 
 export default function DashboardPage() {
-    // TODO: Replace this with real data from backend
-    const activeJob = false; // Flip to true to preview the "update details" state
+    const activeJob = false; // TODO: replace with real backend data
 
     return (
         <main className="min-h-screen bg-gray-50">
-            {/* Top banner (logo + profile button) */}
-            <header className="bg-[#171e3a] text-white">
-                <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-                    {/* Left: Logo + text */}
-                    <a href="/" className="flex items-center gap-2">
+            {/* Top banner (centered logo + profile button right corner) */}
+            <header className="relative bg-[#171e3a] text-white">
+                <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-center">
+                    <a href="/" className="flex flex-col items-center gap-2">
                         <Image
-                            src="/mpLogo.png"
-                            alt="Medical Pantry logo"
-                            width={85}
-                            height={85}
+                            src="/grLogo-alternate.png"
+                            alt="GoodRun logo"
+                            width={90}
+                            height={90}
                             className="rounded-md"
                         />
-                        <span className="text-3xl font-semibold tracking-tight">
-                            Medical Pantry
-                        </span>
                     </a>
 
-                    {/* Right: Profile button */}
+                    {/* Profile shortcut (absolute right corner) */}
                     <a
                         href="/profile"
-                        className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
+                        className="absolute right-6 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
                     >
                         Profile
                     </a>
@@ -71,7 +66,7 @@ export default function DashboardPage() {
                                         Click to update details.
                                     </p>
                                     <a
-                                        href="/jobs/current"
+                                        href="/ongoingJobs"
                                         className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium hover:bg-white"
                                     >
                                         Update job
@@ -82,12 +77,20 @@ export default function DashboardPage() {
                                     <p className="mt-2 text-sm text-white/90">
                                         No active jobs at the moment.
                                     </p>
-                                    <a
-                                        href="/availableJobs"
-                                        className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium hover:bg-white"
-                                    >
-                                        Find jobs
-                                    </a>
+                                    <div className="flex flex-col gap-3 mt-4">
+                                        <a
+                                            href="/availableJobs"
+                                            className="inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
+                                        >
+                                            Find jobs
+                                        </a>
+                                        <a
+                                            href="/ongoingJobs"
+                                            className="inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
+                                        >
+                                            View Ongoing Jobs
+                                        </a>
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -106,6 +109,12 @@ export default function DashboardPage() {
                             <p className="mt-2 text-sm text-gray-600">
                                 Completed jobs will appear here.
                             </p>
+                            <a
+                                href="/jobHistory"
+                                className="mt-4 inline-block rounded-md bg-[#171e3a] px-4 py-2 text-white font-medium text-center hover:bg-[#0f152c] transition"
+                            >
+                                View Job History
+                            </a>
                         </div>
                     </div>
 

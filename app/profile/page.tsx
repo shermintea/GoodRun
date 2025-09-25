@@ -1,19 +1,16 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
 * File:      page.tsx
-* Author:    It Project - medical pantry - group 17
+* Author:    IT Project – Medical Pantry – Group 17
 * Date:      23-09-2025
-* Version:   1.1
+* Version:   1.2
 * Purpose:   Profile Page 
-*            - Display Personal information of volunteer/admin 
-*            - Users are able to edit the details
-*            - Users are able to use basic settings - locations access & notifications
-* 
-* Note: To Integrate Zendesk into the code(extract information of users)
-* 
+*            - Display personal information of volunteer/admin 
+*            - Users can edit details and manage basic settings
 * Revisions:
-* v1.0 - 24-09-2025 - Initial implementation of basic layout of profile page
-* v1.1 - 24-09-2025 - Add Editing Function to personal details 
+* v1.0 - Initial layout
+* v1.1 - Added editing function to personal details 
+* v1.2 - Header: GoodRun logo (left) + Dashboard shortcut (right)
 *******************************************************/
 
 'use client';
@@ -35,10 +32,10 @@ type SettingRowProps = {
   onToggle: () => void;
 };
 
-// 🔹 Manual date formatter (safe for SSR/CSR)
+// Manual date formatter (safe for SSR/CSR)
 function formatDate(isoString: string) {
   const d = new Date(isoString);
-  if (isNaN(d.getTime())) return isoString; // fallback
+  if (isNaN(d.getTime())) return isoString;
   const day = String(d.getUTCDate()).padStart(2, '0');
   const month = String(d.getUTCMonth() + 1).padStart(2, '0');
   const year = d.getUTCFullYear();
@@ -54,7 +51,7 @@ export default function ProfilePage() {
 
   const [profile, setProfile] = useState({
     name: 'Emily Tran',
-    birthdate: '2002-01-01', // stored as ISO
+    birthdate: '2002-01-01',
     email: 'emTran@example.com',
     phone: '+61 400 111 222',
     pickups: 42,
@@ -67,20 +64,26 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-neutral-100 text-neutral-900">
-      {/* Header */}
+      {/* Header: logo left, Dashboard shortcut right */}
       <header className="bg-white">
         <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-4">
             <Image
               src="/grLogo-transparent.png"
-              alt="Medical Pantry Logo"
-              width={64}
-              height={64}
+              alt="GoodRun logo"
+              width={72}
+              height={72}
               priority
             />
           </Link>
-          <div className="hidden md:block text-base md:text-lg text-neutral-500">
-            Profile
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-full bg-[#11183A] px-4 py-2 text-white text-sm md:text-base font-medium hover:opacity-90 transition"
+            >
+              Dashboard
+            </Link>
           </div>
         </div>
       </header>
@@ -122,7 +125,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Right column */}
+          {/* Right column: settings + edit form */}
           <div className="pt-2 lg:pt-0 space-y-6">
             <h2 className="text-base md:text-lg font-extrabold tracking-wide">SETTINGS</h2>
             <div className="divide-y divide-neutral-200 rounded-2xl bg-white shadow-sm">
