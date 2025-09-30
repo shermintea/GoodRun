@@ -16,6 +16,7 @@
 * v1.0 - 24-09-2025 - Initial implementation of basic layout of ongoing job page
 * v1.1 - 25-09-2025 - Logo placement & Interaction: clicking "Confirm Pickup" changes the job status to
                       "DROPOFF" and the button label updates to "Confirm Drop Off".
+* v1.2 - 30-09-2025 - Updated formating to match other pages.
 *******************************************************************************************/
 
 'use client';
@@ -70,51 +71,63 @@ export default function AcceptedJobsPage() {
   return (
     <main className="min-h-screen bg-neutral-100 text-neutral-900">
       {/* Header: logo left, blue ellipse buttons on right */}
+      {/* Top banner (logo on left, buttons on right) */}
       <header className="bg-white">
-        <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-3xl px-4 md:px-6 lg:px-8 py-5 flex items-center justify-between">
-          {/* Left: GoodRun logo (link home) */}
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/grLogo-transparent.png"
-              alt="GoodRun logo"
-              width={72}
-              height={72}
-              priority
-            />
-          </Link>
+          <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
+              {/* Left: GoodRun logo */}
+              <a href="/" className="flex items-center gap-2">
+                  <Image
+                      src="/grLogo-transparent.png"
+                      alt="GoodRun logo"
+                      width={85}
+                      height={85}
+                      className="rounded-md"
+                  />
+              </a>
 
-          {/* Right: Actions (blue ellipse buttons) */}
-          <nav className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-full bg-[#11183A] px-4 py-2 text-white text-sm md:text-base font-medium hover:opacity-90 transition"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/profile"
-              className="rounded-full bg-[#11183A] px-4 py-2 text-white text-sm md:text-base font-medium hover:opacity-90 transition"
-            >
-              Profile
-            </Link>
-          </nav>
-        </div>
+              {/* Right: Dashboard + Profile buttons */}
+              <div className="flex gap-3">
+                  <a
+                      href="/dashboard"
+                      className="rounded-full bg-[#11183A] px-4 py-2 text-white font-medium hover:bg-white transition"
+                  >
+                      Dashboard
+                  </a>
+                  <a
+                      href="/profile"
+                      className="rounded-full bg-[#11183A] px-4 py-2 text-white font-medium hover:bg-white transition"
+                  >
+                      Profile
+                  </a>
+              </div>
+          </div>
       </header>
 
-      {/* Navy banner background */}
-      <section className="bg-[#11183A]">
-        <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-3xl px-4 md:px-6 lg:px-8 py-6 space-y-5">
-          {sorted.map((job) => (
-            <JobCard key={job.id} job={job} onConfirm={onConfirm} />
-          ))}
 
-          {sorted.length === 0 && (
-            <div className="rounded-2xl bg-white p-6 text-center text-neutral-600 shadow-sm">
-              No accepted jobs at the moment.
+      {/* Page title panel */}
+      <section className="max-w-6xl mx-auto px-6 py-5 space-y-5">
+      <div className="h-[100px] rounded-lg bg-red-700 p-6 shadow-sm text-white flex items-center">
+          <h1 className="text-2xl font-semibold">Ongoing Jobs</h1>
+      </div>
+
+      {/* Scrollable job list */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* For centering the column */}
+        <div className="md:col-span-3">            
+            <div className="rounded-lg bg-[#11183A] h-[1150px] mx-auto w-full rounded-lg border px-4 md:px-6 lg:px-8 py-6 space-y-5 overflow-y-auto">
+              {sorted.map((job) => (
+                <JobCard key={job.id} job={job} onConfirm={onConfirm} />
+              ))}
+
+              {sorted.length === 0 && (
+                <div className="rounded-2xl bg-white p-6 text-center text-neutral-600 shadow-sm">
+                  No accepted jobs at the moment.
+                </div>
+              )}
             </div>
-          )}
         </div>
-      </section>
+      </div>
+    </section>
     </main>
   );
 }
