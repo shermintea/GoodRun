@@ -3,7 +3,7 @@
 * File:      dashboard/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      15-09-2025
-* Version:   1.3
+* Version:   1.4
 * Purpose:   Volunteer dashboard with consistent header,
 *            profile button, welcome message, jobs overview,
 *            and map placeholder.
@@ -12,6 +12,7 @@
 * v1.1 - Added welcome banner and profile button at top right
 * v1.2 - Conditional ongoing job state (active vs none)
 * v1.3 - Link to all other pages & profile, replaced logo
+* v1.4 - Removed redundant “Find Jobs” button
 *******************************************************/
 
 import Image from "next/image";
@@ -54,7 +55,7 @@ export default function DashboardPage() {
                     </p>
                 </div>
 
-                {/* Placeholder panels */}
+                {/* Panels */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                     <div className="space-y-4">
                         {/* Ongoing Job */}
@@ -77,20 +78,12 @@ export default function DashboardPage() {
                                     <p className="mt-2 text-sm text-white/90">
                                         No active jobs at the moment.
                                     </p>
-                                    <div className="flex flex-col gap-3 mt-4">
-                                        <a
-                                            href="/availableJobs"
-                                            className="inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
-                                        >
-                                            Find jobs
-                                        </a>
-                                        <a
-                                            href="/ongoingJobs"
-                                            className="inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
-                                        >
-                                            View Ongoing Jobs
-                                        </a>
-                                    </div>
+                                    <a
+                                        href="/ongoingJobs"
+                                        className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
+                                    >
+                                        View Ongoing Jobs
+                                    </a>
                                 </>
                             )}
                         </div>
