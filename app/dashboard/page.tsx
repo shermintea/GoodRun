@@ -12,13 +12,43 @@
 * v1.1 - Added welcome banner and profile button at top right
 * v1.2 - Conditional ongoing job state (active vs none)
 * v1.3 - Link to all other pages & profile, replaced logo
+<<<<<<< Updated upstream
 *******************************************************/
 
 import Image from "next/image";
+=======
+* v1.4 - Removed redundant “Find Jobs” button
+* v1.5 - Modified so that profile edits are persistant and is
+*        reflected in Welcome message
+* v1.6 - Implemented map view
+* v1.7 - Added dynamic loading for map view
+*******************************************************/
+
+"use client";
+
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+const MapView = dynamic(() => import("./mapview"), { ssr: false });
+
+>>>>>>> Stashed changes
 
 export default function DashboardPage() {
     const activeJob = false; // TODO: replace with real backend data
 
+<<<<<<< Updated upstream
+=======
+    // For displaying profile name
+    const [name, setName] = useState<string>("");
+    useEffect(() => {
+        const stored = localStorage.getItem("profile");
+        if (stored) {
+            const profile = JSON.parse(stored);
+            setName(profile.name);
+        }
+    }, []);
+
+>>>>>>> Stashed changes
     return (
         <main className="min-h-screen bg-gray-50">
             {/* Top banner (centered logo + profile button right corner) */}
