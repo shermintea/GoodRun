@@ -13,12 +13,27 @@
 * v1.2 - Conditional ongoing job state (active vs none)
 * v1.3 - Link to all other pages & profile, replaced logo
 * v1.4 - Removed redundant “Find Jobs” button
+* v1.5 - Modified so that profile edits are persistant and is reflected in Welcome message
 *******************************************************/
 
+"use client"; 
+
 import Image from "next/image";
+import { useEffect, useState } from "react";
+
 
 export default function DashboardPage() {
     const activeJob = false; // TODO: replace with real backend data
+
+    // For displaying profile name
+    const [name, setName] = useState<string>("");
+    useEffect(()=>{
+        const stored = localStorage.getItem("profile");
+        if (stored) {
+            const profile = JSON.parse(stored);
+            setName(profile.name);
+        }
+    }, []);
 
     return (
         <main className="min-h-screen bg-gray-50">
@@ -49,7 +64,7 @@ export default function DashboardPage() {
             <section className="max-w-6xl mx-auto px-6 py-10">
                 {/* Welcome banner */}
                 <div className="mb-8 rounded-xl bg-white border border-gray-200 p-6 shadow-sm">
-                    <h1 className="text-2xl font-semibold">Welcome back, Monna! 👋</h1>
+                    <h1 className="text-2xl font-semibold">Welcome back, {name || "there"}! 👋</h1>
                     <p className="mt-2 text-gray-600">
                         Here’s a quick look at your ongoing jobs and updates for today.
                     </p>
@@ -91,6 +106,7 @@ export default function DashboardPage() {
                         {/* Available Jobs */}
                         <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
                             <h2 className="font-semibold">Available Jobs</h2>
+                            
                             <p className="mt-2 text-sm text-gray-600">
                                 Job listings will show here.
                             </p>
