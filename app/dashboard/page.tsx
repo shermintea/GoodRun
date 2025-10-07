@@ -16,13 +16,15 @@
 * v1.5 - Modified so that profile edits are persistant and is
 *        reflected in Welcome message
 * v1.6 - Implemented map view
+* v1.7 - Added dynamic loading for map view
 *******************************************************/
 
-"use client"; 
+"use client";
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import MapView from "./mapview";
+import dynamic from "next/dynamic";
+const MapView = dynamic(() => import("./mapview"), { ssr: false });
 
 
 export default function DashboardPage() {
