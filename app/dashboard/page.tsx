@@ -13,13 +13,16 @@
 * v1.2 - Conditional ongoing job state (active vs none)
 * v1.3 - Link to all other pages & profile, replaced logo
 * v1.4 - Removed redundant “Find Jobs” button
-* v1.5 - Modified so that profile edits are persistant and is reflected in Welcome message
+* v1.5 - Modified so that profile edits are persistant and is
+*        reflected in Welcome message
+* v1.6 - Implemented map view
 *******************************************************/
 
 "use client"; 
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import MapView from "./mapview";
 
 
 export default function DashboardPage() {
@@ -134,8 +137,8 @@ export default function DashboardPage() {
 
                     {/* Map placeholder */}
                     <div className="md:col-span-2">
-                        <div className="h-[400px] w-full rounded-lg border border-gray-200 bg-slate-100 flex items-center justify-center text-slate-600">
-                            Map Placeholder (insert GraphHopper integration)
+                        <div className="h-[400px] w-full rounded-lg border border-gray-200 overflow-hidden">
+                            <MapView />
                         </div>
                     </div>
                 </div>
