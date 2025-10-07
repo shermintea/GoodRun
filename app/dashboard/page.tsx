@@ -3,7 +3,7 @@
 * File:      dashboard/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      15-09-2025
-* Version:   1.3
+* Version:   1.4
 * Purpose:   Volunteer dashboard with consistent header,
 *            profile button, welcome message, jobs overview,
 *            and map placeholder.
@@ -12,11 +12,6 @@
 * v1.1 - Added welcome banner and profile button at top right
 * v1.2 - Conditional ongoing job state (active vs none)
 * v1.3 - Link to all other pages & profile, replaced logo
-<<<<<<< Updated upstream
-*******************************************************/
-
-import Image from "next/image";
-=======
 * v1.4 - Removed redundant “Find Jobs” button
 * v1.5 - Modified so that profile edits are persistant and is
 *        reflected in Welcome message
@@ -31,16 +26,13 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 const MapView = dynamic(() => import("./mapview"), { ssr: false });
 
->>>>>>> Stashed changes
 
 export default function DashboardPage() {
     const activeJob = false; // TODO: replace with real backend data
 
-<<<<<<< Updated upstream
-=======
     // For displaying profile name
     const [name, setName] = useState<string>("");
-    useEffect(() => {
+    useEffect(()=>{
         const stored = localStorage.getItem("profile");
         if (stored) {
             const profile = JSON.parse(stored);
@@ -48,7 +40,6 @@ export default function DashboardPage() {
         }
     }, []);
 
->>>>>>> Stashed changes
     return (
         <main className="min-h-screen bg-gray-50">
             {/* Top banner (centered logo + profile button right corner) */}
@@ -78,13 +69,13 @@ export default function DashboardPage() {
             <section className="max-w-6xl mx-auto px-6 py-10">
                 {/* Welcome banner */}
                 <div className="mb-8 rounded-xl bg-white border border-gray-200 p-6 shadow-sm">
-                    <h1 className="text-2xl font-semibold">Welcome back, Monna! 👋</h1>
+                    <h1 className="text-2xl font-semibold">Welcome back, {name || "there"}! 👋</h1>
                     <p className="mt-2 text-gray-600">
                         Here’s a quick look at your ongoing jobs and updates for today.
                     </p>
                 </div>
 
-                {/* Placeholder panels */}
+                {/* Panels */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                     <div className="space-y-4">
                         {/* Ongoing Job */}
@@ -107,20 +98,12 @@ export default function DashboardPage() {
                                     <p className="mt-2 text-sm text-white/90">
                                         No active jobs at the moment.
                                     </p>
-                                    <div className="flex flex-col gap-3 mt-4">
-                                        <a
-                                            href="/availableJobs"
-                                            className="inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
-                                        >
-                                            Find jobs
-                                        </a>
-                                        <a
-                                            href="/ongoingJobs"
-                                            className="inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
-                                        >
-                                            View Ongoing Jobs
-                                        </a>
-                                    </div>
+                                    <a
+                                        href="/ongoingJobs"
+                                        className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
+                                    >
+                                        View Ongoing Jobs
+                                    </a>
                                 </>
                             )}
                         </div>
@@ -131,6 +114,12 @@ export default function DashboardPage() {
                             <p className="mt-2 text-sm text-gray-600">
                                 Job listings will show here.
                             </p>
+                            <a
+                                href="/availableJobs"
+                                className="mt-4 inline-block rounded-md bg-[#171e3a] px-4 py-2 text-white font-medium text-center hover:bg-[#0f152c] transition"
+                            >
+                                View Available Jobs
+                            </a>
                         </div>
 
                         {/* Job History */}
@@ -150,8 +139,8 @@ export default function DashboardPage() {
 
                     {/* Map placeholder */}
                     <div className="md:col-span-2">
-                        <div className="h-[400px] w-full rounded-lg border border-gray-200 bg-slate-100 flex items-center justify-center text-slate-600">
-                            Map Placeholder (insert GraphHopper integration)
+                        <div className="h-[400px] w-full rounded-lg border border-gray-200 overflow-hidden">
+                            <MapView />
                         </div>
                     </div>
                 </div>

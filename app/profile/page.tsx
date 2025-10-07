@@ -11,11 +11,12 @@
 * v1.0 - Initial layout
 * v1.1 - Added editing function to personal details 
 * v1.2 - Header: GoodRun logo (left) + Dashboard shortcut (right)
+* v1.3 - Modified so that profile edits are persistant with localstorage
 *******************************************************/
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -31,6 +32,8 @@ type SettingRowProps = {
   enabled: boolean;
   onToggle: () => void;
 };
+
+// type Profile = { name: string; }
 
 // Manual date formatter (safe for SSR/CSR)
 function formatDate(isoString: string) {
@@ -56,6 +59,11 @@ export default function ProfilePage() {
     phone: '+61 400 111 222',
     pickups: 42,
   });
+
+  useEffect(()=>{
+    const stored = localStorage.getItem("profile");
+    if (stored) setProfile(JSON.parse(stored));
+  }, []);
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -160,6 +168,7 @@ export default function ProfilePage() {
                   onSave={(next) => {
                     setProfile(next);
                     setIsEditing(false);
+                    localStorage.setItem("profile", JSON.stringify(next));
                   }}
                 />
               </div>
