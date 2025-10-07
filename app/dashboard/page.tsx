@@ -106,10 +106,15 @@ export default function DashboardPage() {
                         {/* Available Jobs */}
                         <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
                             <h2 className="font-semibold">Available Jobs</h2>
-                            
                             <p className="mt-2 text-sm text-gray-600">
                                 Job listings will show here.
                             </p>
+                            <a
+                                href="/availableJobs"
+                                className="mt-4 inline-block rounded-md bg-[#171e3a] px-4 py-2 text-white font-medium text-center hover:bg-[#0f152c] transition"
+                            >
+                                View Available Jobs
+                            </a>
                         </div>
 
                         {/* Job History */}
