@@ -22,23 +22,25 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Database Setup
 
-The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. All developers share the same database for testing purposes. The following is a guide for usage:
+The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. All developers share the same database for testing purposes. Here is a guide for usage:
 
-1. Create .env.local file at root of repository
+1. **Create .env.local file at root of repository**
 ```.env.local
+// .env.local
 DATABASE_URL=postgresql://goodrun_user:W1yoj70VKtjKjOI9W6BkBrb5lqGYi8Mg@dpg-d3hk7khr0fns73cf1dj0-a.oregon-postgres.render.com/goodrun
 NODE_ENV=development
 ```
 
-2. Database Management
+2. **Database Management**
 > Tables and test data had already been created. This step is optional for modifying the schema.
-To manage the db system, you can either download the pgAdmin4 software, or connect through command line (brew install postgresql and connect).
+To manage the db system, you can either download the **pgAdmin4** software, or connect through **command line** (brew install postgresql and connect).
 
-For more information see: https://group17-medical-pantry-it-project.atlassian.net/wiki/spaces/IP/pages/52297730/Database+Information+on+Render
+For more information see: 
+https://group17-medical-pantry-it-project.atlassian.net/wiki/spaces/IP/pages/52297730/Database+Information+on+Render
 
 
 3. Tables and Structure
-### `organisation`
+## `organisation`
 Stores details about volunteer organisations.
 
 | Column         | Type      | Notes                         |
@@ -49,7 +51,7 @@ Stores details about volunteer organisations.
 | contact_no     | VARCHAR   | Phone number                  |
 | office_hours   | VARCHAR   | Hours of operation            |
 
-### `jobs`
+## `jobs`
 Stores volunteer jobs. Each job belongs to an organisation.
 
 | Column          | Type        | Notes                         |
@@ -66,7 +68,7 @@ Stores volunteer jobs. Each job belongs to an organisation.
 | organisation_id | INTEGER     | FK to `organisation(id)`      |
 | created_at      | TIMESTAMP   | Auto-generated on insert      |
 
-### `users`
+## `users`
 Stores volunteer and admin accounts.
 
 | Column        | Type      | Notes                                |
@@ -77,9 +79,12 @@ Stores volunteer and admin accounts.
 | role          | VARCHAR   | 'volunteer' or 'admin'               |
 | password_hash | VARCHAR   | bcrypt hash of password              |
 
+
 4. Test data
 
-The test records were seeded through script runnning. To view records for testing see scripts/seedTestRecords.sql, or retrieve table records through dbms.
+The test records were seeded through script runnning. To view records for testing see **scripts/seedTestRecords.sql**, or retrieve table records through dbms.
+
+To test login the **passwords are all '000'** (saved as hashes in db).
 
 
 ## Learn More
