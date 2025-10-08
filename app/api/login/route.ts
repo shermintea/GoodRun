@@ -10,10 +10,11 @@
 *           Serves as entry point for authentication.
 *Revisions:
 *v1.0 - 18-09-2025 - Initial implementation
+*v2.0 - 08-10-2025 - Migrated from MySQL to PostgreSQL, adjusted query syntax
 *******************************************************/
 
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 //  Function:   POST
@@ -24,12 +25,12 @@ export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
 
   try {
-    const [rows] = await db.query(
-      'SELECT id, email, password_hash FROM users WHERE email = ?',
+    const result = await pool.query(
+      'SELECT id, email, password_hash FROM users WHERE email = $1',
       [email]
     );
 
-    const user = (rows as any)[0];
+    const user = result.rows[0];
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

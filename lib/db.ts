@@ -3,14 +3,15 @@
 *File:      lib/db.ts  
 *Author:    IT Project – Medical Pantry – Group 17
 *Date:      18-09-2025
-*Version:   1.0
+*Version:   2.0
 *Purpose:   Centralizes database connection setup, takes database credentials from .env.local,
 *           and provides a reusable connection pool for other scripts.
 *Revisions:
 *v1.0 - 18-09-2025 - Initial implementation
+*v2.0 - 08-10-2025 - Migrated from MySQL to PostgreSQL (Render deployment)
 *******************************************************/
 
-import mysql from 'mysql2/promise';
+import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,14 +23,12 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
-const db = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
+// Create PostgreSQL connection pool
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false }  // Required for Render SSL
+        : false,
 });
 
-export default db;
+export default pool;
