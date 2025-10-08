@@ -22,41 +22,64 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Database Setup
 
-This project uses mySQL for database management. For testing in current stage, set up a local mySQL server with the following steps.
+The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. All developers share the same database for testing purposes. The following is a guide for usage:
 
 1. Create .env.local file at root of repository
 ```.env.local
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=good_run
-DB_PORT=3306
-```
-> Replace your_password with local mySQL server password.
-
-2. Install dependencies
-
-> Install *mySQL* 
-```bash
-# for macOS with Homebrew
-brew install mysql
-brew services start mysql
-```
-> Install *npm*
-```bash
-npm install
+DATABASE_URL=postgresql://goodrun_user:W1yoj70VKtjKjOI9W6BkBrb5lqGYi8Mg@dpg-d3hk7khr0fns73cf1dj0-a.oregon-postgres.render.com/goodrun
+NODE_ENV=development
 ```
 
-3. Connect to mySQL
-```bash
-mysql -u root -p
-```
+2. Database Management
+> Tables and test data had already been created. This step is optional for modifying the schema.
+To manage the db system, you can either download the pgAdmin4 software, or connect through command line (brew install postgresql and connect).
 
-4. Setup Database 
-```bash
-npx tsx scripts/setupDb.ts
-```
-> Run this script to insert all test users to local mySQL table
+For more information see: https://group17-medical-pantry-it-project.atlassian.net/wiki/spaces/IP/pages/52297730/Database+Information+on+Render
+
+
+3. Tables and Structure
+### `organisation`
+Stores details about volunteer organisations.
+
+| Column         | Type      | Notes                         |
+|----------------|-----------|-------------------------------|
+| id             | SERIAL    | Primary Key                   |
+| name           | VARCHAR   | Organisation name             |
+| address        | VARCHAR   | Street address                |
+| contact_no     | VARCHAR   | Phone number                  |
+| office_hours   | VARCHAR   | Hours of operation            |
+
+### `jobs`
+Stores volunteer jobs. Each job belongs to an organisation.
+
+| Column          | Type        | Notes                         |
+|-----------------|------------|--------------------------------|
+| id              | SERIAL      | Primary Key                   |
+| assigned_to     | VARCHAR     | Name of volunteer (optional) |
+| progress_stage  | VARCHAR     | 'available', 'reserved', 'in delivery' |
+| deadline_date   | DATE        | Job deadline                  |
+| weight          | NUMERIC     | Approx. weight of items       |
+| value           | NUMERIC     | Approx. value of items        |
+| size            | VARCHAR     | 'tiny', 'small'               |
+| follow_up       | BOOLEAN     | Follow-up required            |
+| intake_priority | VARCHAR     | 'low', 'medium', 'high'       |
+| organisation_id | INTEGER     | FK to `organisation(id)`      |
+| created_at      | TIMESTAMP   | Auto-generated on insert      |
+
+### `users`
+Stores volunteer and admin accounts.
+
+| Column        | Type      | Notes                                |
+|---------------|-----------|--------------------------------------|
+| id            | SERIAL    | Primary Key                          |
+| name          | VARCHAR   | Full name                            |
+| email         | VARCHAR   | login email                          |
+| role          | VARCHAR   | 'volunteer' or 'admin'               |
+| password_hash | VARCHAR   | bcrypt hash of password              |
+
+4. Test data
+
+The test records were seeded through script runnning. To view records for testing see scripts/seedTestRecords.sql, or retrieve table records through dbms.
 
 
 ## Learn More
@@ -68,11 +91,12 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The GoodRun Volunteer App is deployed on **Render**.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+URL: https://team-17-medical-pantry.onrender.com
+
 
 ## Project Architecture
 ```pgsql
@@ -91,12 +115,7 @@ Team-17-Medical-Pantry/
 ├── components/...
 ├── lib/
 │   └── db.ts
-├── scripts/
-│   ├── createJobsTable.ts
-│   ├── createUsersTable.ts
-│   ├── seedJobs.ts
-│   ├── seedUsers.ts
-│   └── setupDb.tsx
+├── scripts/...
 ├── .env.local
 ├── package.json
 ├── tsconfig.json
