@@ -25,9 +25,7 @@ import Image from "next/image";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
-const MapView = dynamic(() => import("./mapview"), { ssr: false });
-
+import MapView from "./mapview";
 
 export default async function DashboardPage() {
     // Fetch session from server
