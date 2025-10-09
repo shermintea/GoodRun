@@ -29,6 +29,8 @@ The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. All devel
 // .env.local
 DATABASE_URL=postgresql://goodrun_user:W1yoj70VKtjKjOI9W6BkBrb5lqGYi8Mg@dpg-d3hk7khr0fns73cf1dj0-a.oregon-postgres.render.com/goodrun
 NODE_ENV=development
+NEXTAUTH_SECRET=[generate your own key]     // Command to generate: openssl rand -base64 32
+NEXTAUTH_URL=https://team-17-medical-pantry.onrender.com
 ```
 
 2. **Database Management**

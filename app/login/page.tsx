@@ -9,6 +9,7 @@
 *            user-friendly navigation (e.g. forgot password link).
 * Revisions:
 * v1.0 - 11-09-2025 - Initial implementation of login UI
+* v2.0 - 09-10-2025 - Added NextAuth login session and db integration
 *******************************************************/
 
 // enables state and fetch
@@ -17,6 +18,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,32 +28,24 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
 
-    try {
-      const res = await fetch("api/login", {
-        method: "POST",
-        headers: { "Content-Type": "applications/json" },
-        body: JSON.stringify({ email, password }),
-      }
-      );
+    // NextAuth Sign in
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        console.log("Login success:", data);
-        // redirect to dashboard or home page
-        router.push("/dashboard");
-      } else {
-        setError(data.error || "Login failed");
-      }
-
-    } catch (err) {
-      console.error(err);
-      setError("Server error");
+    if (result?.error) {
+      setError("Invalid email or password");
+    } else {
+      router.push("/dashboard");
     }
   };
 
   // Front-end page render
+  // TO-DO: add remember me button
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Top banner */}

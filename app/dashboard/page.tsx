@@ -19,26 +19,31 @@
 * v1.7 - Added dynamic loading for map view
 *******************************************************/
 
-"use client";
+//"use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import dynamic from "next/dynamic";
 const MapView = dynamic(() => import("./mapview"), { ssr: false });
 
 
-export default function DashboardPage() {
-    const activeJob = false; // TODO: replace with real backend data
+export default async function DashboardPage() {
+    // Fetch session from server
+    const session = await getServerSession(authOptions);
 
-    // For displaying profile name
-    const [name, setName] = useState<string>("");
-    useEffect(()=>{
-        const stored = localStorage.getItem("profile");
-        if (stored) {
-            const profile = JSON.parse(stored);
-            setName(profile.name);
-        }
-    }, []);
+    // If not logged in, redirect to login page
+    if (!session) {
+        return redirect("/login");
+    }
+
+    const { user } = session;
+
+    // Example: role-based dashboard
+    const isAdmin = user?.role === "admin";
+
+    const activeJob = false; // TODO: replace with real backend data
 
     return (
         <main className="min-h-screen bg-gray-50">
@@ -69,7 +74,7 @@ export default function DashboardPage() {
             <section className="max-w-6xl mx-auto px-6 py-10">
                 {/* Welcome banner */}
                 <div className="mb-8 rounded-xl bg-white border border-gray-200 p-6 shadow-sm">
-                    <h1 className="text-2xl font-semibold">Welcome back, {name || "there"}! 👋</h1>
+                    <h1 className="text-2xl font-semibold">Welcome back, {user?.name || "there"}! 👋</h1>
                     <p className="mt-2 text-gray-600">
                         Here’s a quick look at your ongoing jobs and updates for today.
                     </p>
