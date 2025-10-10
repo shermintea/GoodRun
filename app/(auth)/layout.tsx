@@ -14,5 +14,8 @@ import MedicalPantryHeader from "@/components/MedicalPantryHeader";
 import PublicLayout from "@/components/PublicLayout";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-    return <PublicLayout><MedicalPantryHeader />{children}</PublicLayout>;
+    return <PublicLayout>
+        <MedicalPantryHeader />
+        <main className="min-h-screen bg-gray-50">{children}</main>
+    </PublicLayout>;
 }

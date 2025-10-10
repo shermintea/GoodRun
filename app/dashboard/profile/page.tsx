@@ -3,10 +3,11 @@
 * File:      page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      23-09-2025
-* Version:   1.2
+* Version:   1.6
 * Purpose:   Profile Page 
 *            - Display personal information of volunteer/admin 
 *            - Users can edit details and manage basic settings
+*            - Users can logout and end session
 * Revisions:
 * v1.0 - Initial layout
 * v1.1 - Added editing function to personal details 
@@ -14,12 +15,14 @@
 * v1.3 - Modified so that profile edits are persistant with localstorage
 * v1.4 - Added session-based header redirection
 * v1.5 - Moved page to dashboard/profile, replaced with reusable header
+* v1.6 - Added logout button
 *******************************************************/
 
 'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import LogoutButton from "@/components/LogoutButton";
 
 type SettingsState = {
   notif: boolean;
@@ -152,6 +155,7 @@ export default function ProfilePage() {
                 />
               </div>
             )}
+            <LogoutButton />
           </div>
         </div>
       </section>

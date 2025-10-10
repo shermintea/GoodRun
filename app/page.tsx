@@ -11,7 +11,7 @@
 * Revisions:
 * v1.0 - 11-09-2025 - Initial implementation of the initial page
 * v1.1 - 18-09-2025 - Made changes to the GoodRun description 
-* v1.2 - 10-10-2025 - Removed header definition
+* v1.2 - 10-10-2025 - Replaced header with component
 *******************************************************/
 
 import MedicalPantryHeader from "@/components/MedicalPantryHeader";

@@ -15,10 +15,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 
 export default function MedicalPantryHeader() {
-    const { data: session } = useSession();
 
     return (
         <header className="bg-[#171e3a] text-white">

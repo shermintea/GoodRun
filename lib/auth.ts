@@ -66,7 +66,10 @@ export const authOptions: NextAuthOptions = {
     ],
     session: {
         strategy: 'jwt', // server-side sessions
-        //maxAge: 60 * 60 * 24, // 1 day
+        maxAge: 30 * 60, // 30 minutes
+    },
+    jwt: {
+        maxAge: 30 * 60, // 30 minutes
     },
     callbacks: {
         async jwt({ token, user }) {
