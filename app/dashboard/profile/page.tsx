@@ -16,13 +16,26 @@
 * v1.4 - Added session-based header redirection
 * v1.5 - Moved page to dashboard/profile, replaced with reusable header
 * v1.6 - Added logout button
+* v2.0 - Edits are persisted via PATCH /api/profile in cookies
+* v3.0 - 
 *******************************************************/
 
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useSession, signIn } from "next-auth/react";
+import Image from "next/image";
 import LogoutButton from "@/components/LogoutButton";
+
+/* ---------- Types ---------- */
+type Profile = {
+  name: string;
+  email: string;
+  phone: string;
+  birthdate: string | null;
+  image: string | null;
+  pickups_finished: number;
+};
 
 type SettingsState = {
   notif: boolean;
@@ -37,139 +50,173 @@ type SettingRowProps = {
   onToggle: () => void;
 };
 
-// type Profile = { name: string; }
+/* ---------------- Utils ---------------- */
 
-// Manual date formatter (safe for SSR/CSR)
-function formatDate(isoString: string) {
+// Safe dd/MM/yyyy formatter
+function formatDate(isoString: string | null) {
+  if (!isoString) return "—";
   const d = new Date(isoString);
-  if (isNaN(d.getTime())) return isoString;
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  if (isNaN(d.getTime())) return "—";
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
   const year = d.getUTCFullYear();
   return `${day}/${month}/${year}`;
 }
 
-export default function ProfilePage() {
+/* ---------------- Page ---------------- */
 
+export default function ProfilePage() {
+  const { data: session } = useSession();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsState>({
     notif: true,
     location: true,
     darkmode: false,
   });
 
-  const [profile, setProfile] = useState({
-    name: 'Emily Tran',
-    birthdate: '2002-01-01',
-    email: 'emTran@example.com',
-    phone: '+61 400 111 222',
-    pickups: 42,
-  });
-
+  // Get profile from database
   useEffect(() => {
-    const stored = localStorage.getItem("profile");
-    if (stored) setProfile(JSON.parse(stored));
-  }, []);
+    if (!session?.user?.email) return;
 
-  const [isEditing, setIsEditing] = useState(false);
+    fetch("/api/profile")
+      .then((res) => res.json())
+      .then((data) => setProfile(data))
+      .catch(() => setError("Failed to load profile"));
+  }, [session?.user?.email]);
 
-  const toggle = (key: keyof SettingsState) =>
-    setSettings((s) => ({ ...s, [key]: !s[key] }));
+  // Save changes
+  const handleSave = async (updated: Profile) => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+
+      if (!res.ok) throw new Error("Failed to save");
+
+      const updatedProfile = await res.json();
+      setProfile(updatedProfile);
+      setIsEditing(false);
+    } catch {
+      setError("Failed to save changes");
+    }
+    setIsSaving(false);
+  };
+
+  const toggleSetting = (key: keyof SettingsState) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <main className="min-h-screen bg-neutral-100 text-neutral-900">
 
       {/* Main */}
       <section className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6">
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          {/* Profile card */}
-          <div className="relative rounded-2xl bg-[#11183A] text-white overflow-visible">
-            <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
-              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full ring-4 ring-white overflow-hidden shadow-lg">
-                <Image src="/avatar.png" alt="Profile photo" width={120} height={120} />
-              </div>
-            </div>
-
-            <div className="px-6 pt-20 pb-8 md:px-8 md:pt-24">
-              <h1 className="text-center text-xl md:text-2xl font-semibold">
-                Volunteer / Admin
-              </h1>
-
-              <div className="mt-6 space-y-4 text-sm md:text-base">
-                <InfoRow label="Name" value={profile.name} />
-                <InfoRow label="Birthdate" value={formatDate(profile.birthdate)} />
-                <InfoRow label="Email" value={profile.email} />
-                <InfoRow label="Phone" value={profile.phone} />
-                <InfoRow label="Total pickups finished" value={String(profile.pickups)} />
-              </div>
-
-              <div className="mt-6 text-center">
-                {!isEditing && (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
-                  >
-                    Edit profile
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right column: settings + edit form */}
-          <div className="pt-2 lg:pt-0 space-y-6">
-            <h2 className="text-base md:text-lg font-extrabold tracking-wide">SETTINGS</h2>
-            <div className="divide-y divide-neutral-200 rounded-2xl bg-white shadow-sm">
-              <SettingRow
-                label="Notifications"
-                description="Receive important updates about pickups"
-                enabled={settings.notif}
-                onToggle={() => toggle('notif')}
-              />
-              <SettingRow
-                label="Location access"
-                description="Allow location for better routing"
-                enabled={settings.location}
-                onToggle={() => toggle('location')}
-              />
-              <SettingRow
-                label="Dark mode"
-                description="Use a darker color theme"
-                enabled={settings.darkmode}
-                onToggle={() => toggle('darkmode')}
-              />
-            </div>
-
-            {isEditing && (
-              <div className="rounded-2xl bg-white shadow-sm p-5">
-                <div className="mb-3 text-base md:text-lg font-extrabold tracking-wide">
-                  EDIT PROFILE
+        {!profile ? (
+          <div className="py-24 text-center text-neutral-500">Loading profile…</div>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-8 items-start">
+            {/* Profile card */}
+            <div className="relative rounded-2xl bg-[#11183A] text-white overflow-visible">
+              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
+                <div className="h-24 w-24 md:h-28 md:w-28 rounded-full ring-4 ring-white overflow-hidden shadow-lg">
+                  <Image src={profile.image || "/default-avatar.png"} alt="Profile photo" width={120} height={120} />
                 </div>
-                <EditProfileForm
-                  initial={profile}
-                  onCancel={() => setIsEditing(false)}
-                  onSave={(next) => {
-                    setProfile(next);
-                    setIsEditing(false);
-                    localStorage.setItem("profile", JSON.stringify(next));
-                  }}
+              </div>
+
+              <div className="px-6 pt-20 pb-8 md:px-8 md:pt-24">
+                <h1 className="text-center text-xl md:text-2xl font-semibold">
+                  {profile.name} / Admin
+                </h1>
+
+                <div className="mt-6 space-y-4 text-sm md:text-base">
+                  <InfoRow label="Name" value={profile.name} />
+                  <InfoRow label="Birthdate" value={formatDate(profile.birthdate)} />
+                  <InfoRow label="Email" value={profile.email} />
+                  <InfoRow label="Phone" value={profile.phone || "—"} />
+                  <InfoRow
+                    label="Total pickups finished"
+                    value={String(profile.pickups_finished ?? 0)}
+                  />
+                </div>
+
+                <div className="mt-6 text-center">
+                  {!isEditing && (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
+                    >
+                      Edit profile
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right column: settings + edit form */}
+            <div className="pt-2 lg:pt-0 space-y-6">
+              <h2 className="text-base md:text-lg font-extrabold tracking-wide">SETTINGS</h2>
+              <div className="divide-y divide-neutral-200 rounded-2xl bg-white shadow-sm">
+                <SettingRow
+                  label="Notifications"
+                  description="Receive important updates about pickups"
+                  enabled={settings.notif}
+                  onToggle={() => toggleSetting("notif")}
+                />
+                <SettingRow
+                  label="Location access"
+                  description="Allow location for better routing"
+                  enabled={settings.location}
+                  onToggle={() => toggleSetting("location")}
+                />
+                <SettingRow
+                  label="Dark mode"
+                  description="Use a darker color theme"
+                  enabled={settings.darkmode}
+                  onToggle={() => toggleSetting("darkmode")}
                 />
               </div>
-            )}
-            <LogoutButton />
+
+              {isEditing && (
+                <div className="rounded-2xl bg-white shadow-sm p-5">
+                  <div className="mb-3 text-base md:text-lg font-extrabold tracking-wide">
+                    EDIT PROFILE
+                  </div>
+                  <EditProfileForm
+                    profile={profile}
+                    saving={isSaving}
+                    onSave={handleSave}
+                    onCancel={() => setIsEditing(false)}
+                  />
+                </div>
+              )}
+
+              <LogoutButton />
+            </div>
           </div>
-        </div>
+        )}
+        {error && (
+          <div className="py-4 mb-6 rounded-lg bg-red-50 text-red-700 border border-red-200 px-4">
+            {error}
+          </div>
+        )}
       </section>
     </main>
   );
 }
 
-/* --- Small Components --- */
+/* ---------------- Small Components ---------------- */
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="font-semibold text-white">{label}</div>
-      <div className="text-neutral-300">{value}</div>
+      <div className="text-neutral-300 break-words">{value}</div>
     </div>
   );
 }
@@ -188,15 +235,15 @@ function SettingRow({ label, description, enabled, onToggle }: SettingRowProps) 
         aria-checked={enabled}
         onClick={onToggle}
         className={[
-          'relative inline-flex h-7 w-12 items-center rounded-full transition',
-          enabled ? 'bg-[#11183A]' : 'bg-neutral-300',
-        ].join(' ')}
+          "relative inline-flex h-7 w-12 items-center rounded-full transition",
+          enabled ? "bg-[#11183A]" : "bg-neutral-300",
+        ].join(" ")}
       >
         <span
           className={[
-            'inline-block h-5 w-5 transform rounded-full bg-white shadow transition',
-            enabled ? 'translate-x-6' : 'translate-x-1',
-          ].join(' ')}
+            "inline-block h-5 w-5 transform rounded-full bg-white shadow transition",
+            enabled ? "translate-x-6" : "translate-x-1",
+          ].join(" ")}
         />
         <span className="sr-only">{`Toggle ${label}`}</span>
       </button>
@@ -204,21 +251,24 @@ function SettingRow({ label, description, enabled, onToggle }: SettingRowProps) 
   );
 }
 
-/* --- Edit Profile Form --- */
+/* ---------------- Edit Form ---------------- */
 
 function EditProfileForm({
-  initial,
-  onCancel,
+  profile,
+  saving,
   onSave,
+  onCancel,
 }: {
-  initial: { name: string; birthdate: string; email: string; phone: string; pickups: number };
+  profile: Profile;
+  saving: boolean;
+  onSave: (updated: Profile) => void;
   onCancel: () => void;
-  onSave: (next: { name: string; birthdate: string; email: string; phone: string; pickups: number }) => void;
 }) {
-  const [form, setForm] = useState(initial);
+  const [form, setForm] = useState<Profile>(profile);
 
-  const set = (k: keyof typeof form, v: string | number) =>
-    setForm((f) => ({ ...f, [k]: v as never }));
+  const set = <K extends keyof Profile>(key: K, value: Profile[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   return (
     <form
@@ -233,7 +283,7 @@ function EditProfileForm({
           <span className="block text-neutral-600 mb-1">Name</span>
           <input
             value={form.name}
-            onChange={(e) => set('name', e.target.value)}
+            onChange={(e) => set("name", e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </label>
@@ -242,8 +292,8 @@ function EditProfileForm({
           <span className="block text-neutral-600 mb-1">Birthdate</span>
           <input
             type="date"
-            value={form.birthdate}
-            onChange={(e) => set('birthdate', e.target.value)}
+            value={form.birthdate || ""}
+            onChange={(e) => set("birthdate", e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </label>
@@ -253,8 +303,9 @@ function EditProfileForm({
           <input
             type="email"
             value={form.email}
-            onChange={(e) => set('email', e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            disabled
+            title="Email changes are disabled in demo"
+            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-500"
           />
         </label>
 
@@ -262,7 +313,7 @@ function EditProfileForm({
           <span className="block text-neutral-600 mb-1">Phone</span>
           <input
             value={form.phone}
-            onChange={(e) => set('phone', e.target.value)}
+            onChange={(e) => set("phone", e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </label>
@@ -272,8 +323,8 @@ function EditProfileForm({
           <input
             type="number"
             min={0}
-            value={form.pickups}
-            onChange={(e) => set('pickups', Number(e.target.value))}
+            value={form.pickups_finished}
+            onChange={(e) => set("pickups_finished", Number(e.target.value))}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </label>
@@ -282,9 +333,10 @@ function EditProfileForm({
       <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
-          className="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800"
+          disabled={saving}
+          className="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-60"
         >
-          Save changes
+          {saving ? "Saving…" : "Save changes"}
         </button>
         <button
           type="button"

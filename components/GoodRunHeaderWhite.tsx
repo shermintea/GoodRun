@@ -31,6 +31,7 @@ export default function Header() {
                         width={85}
                         height={85}
                         className="rounded-md"
+                        priority
                     />
                 </Link>
 

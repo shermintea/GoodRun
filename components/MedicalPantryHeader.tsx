@@ -28,6 +28,7 @@ export default function MedicalPantryHeader() {
                         width={85}
                         height={85}
                         className="rounded-md"
+                        priority
                     />
                     <span className="text-3xl font-semibold tracking-tight">
                         Medical Pantry

@@ -9,6 +9,7 @@
 *            Redirect logged-in users to dashboard when visiting login page.
 * Revisions:
 * v1.0 - 10-10-2025 - Initial implementation
+* v2.0 - 10-10-2025 - Role-based redirection
 *******************************************************/
 
 "use client";
@@ -18,12 +19,25 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const router = useRouter();
 
     useEffect(() => {
-        if (status === "authenticated") router.replace("/dashboard");
-    }, [status, router]);
+        if (status === "authenticated" && session?.user?.role) {
+            const role = session.user.role;
+
+            switch (role) {
+                case "admin":
+                    router.replace("/dashboard/admin");
+                    break;
+                case "volunteer":
+                    router.replace("/dashboard/volunteer");
+                    break;
+                default:
+                    router.replace("/dashboard");
+            }
+        }
+    }, [status, session, router]);
 
     if (status === "loading" || status === "authenticated") {
         return <div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>;
