@@ -3,42 +3,44 @@
 * File:      page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      23-09-2025
-* Version:   1.2
+* Version:   1.6
 * Purpose:   Profile Page 
 *            - Display personal information of volunteer/admin 
 *            - Users can edit details and manage basic settings
+*            - Users can logout and end session
 * Revisions:
 * v1.0 - Initial layout
 * v1.1 - Added editing function to personal details 
 * v1.2 - Header: GoodRun logo (left) + Dashboard shortcut (right)
 * v1.3 - Modified so that profile edits are persistant with localstorage
-* v2.0 - Profile Page (DB-backed)
-*      - Edits are persisted via PATCH /api/profile
+* v1.4 - Added session-based header redirection
+* v1.5 - Moved page to dashboard/profile, replaced with reusable header
+* v1.6 - Added logout button
+* v2.0 - Edits are persisted via PATCH /api/profile in cookies
+* v3.0 - 
 *******************************************************/
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+import { useSession, signIn } from "next-auth/react";
 import Image from "next/image";
-import Link from "next/link";
+import LogoutButton from "@/components/LogoutButton";
 
-/* ---------------- Types ---------------- */
+/* ---------- Types ---------- */
+type Profile = {
+  name: string;
+  email: string;
+  phone: string;
+  birthdate: string | null;
+  image: string | null;
+  pickups_finished: number;
+};
 
 type SettingsState = {
   notif: boolean;
   location: boolean;
   darkmode: boolean;
-};
-
-type ProfileShape = {
-  id: number;
-  name: string;
-  email: string;
-  role: "admin" | "volunteer";
-  birthdate: string | null;           // ISO (e.g., 2002-01-01) or null
-  phone: string | null;
-  pickups_finished: number | null;    // DB column
-  avatar_url: string | null;
 };
 
 type SettingRowProps = {
@@ -64,172 +66,72 @@ function formatDate(isoString: string | null) {
 /* ---------------- Page ---------------- */
 
 export default function ProfilePage() {
+  const { data: session } = useSession();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsState>({
     notif: true,
     location: true,
     darkmode: false,
   });
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string>("");
-
-  // Profile from DB
-  const [profile, setProfile] = useState<ProfileShape | null>(null);
-
-  // Local edit buffer
-  const [isEditing, setIsEditing] = useState(false);
-  const [edit, setEdit] = useState({
-    name: "",
-    birthdate: "",
-    email: "",
-    phone: "",
-    pickups: 0,
-  });
-
-  // Load current user from the API (cookie-aware on server)
+  // Get profile from database
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const res = await fetch("/api/profile", { cache: "no-store" });
-        const data = await res.json();
+    if (!session?.user?.email) return;
 
-        if (!res.ok || !data?.user) {
-          setError(data?.error ?? "Failed to load profile");
-          setLoading(false);
-          return;
-        }
+    fetch("/api/profile")
+      .then((res) => res.json())
+      .then((data) => setProfile(data))
+      .catch(() => setError("Failed to load profile"));
+  }, [session?.user?.email]);
 
-        if (!alive) return;
-        const u: ProfileShape = data.user;
-
-        setProfile(u);
-        setEdit({
-          name: u.name ?? "",
-          birthdate: u.birthdate ?? "",
-          email: u.email ?? "",
-          phone: u.phone ?? "",
-          pickups: Number(u.pickups_finished ?? 0),
-        });
-        setLoading(false);
-      } catch (e) {
-        console.error(e);
-        if (!alive) return;
-        setError("Failed to load profile");
-        setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const toggle = (key: keyof SettingsState) =>
-    setSettings((s) => ({ ...s, [key]: !s[key] }));
-
-  const onCancel = () => {
-    if (!profile) return;
-    setEdit({
-      name: profile.name ?? "",
-      birthdate: profile.birthdate ?? "",
-      email: profile.email ?? "",
-      phone: profile.phone ?? "",
-      pickups: Number(profile.pickups_finished ?? 0),
-    });
-    setIsEditing(false);
-  };
-
-  const onSave = async () => {
+  // Save changes
+  const handleSave = async (updated: Profile) => {
+    setIsSaving(true);
     try {
-      setSaving(true);
-      setError("");
-
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: edit.name,
-          birthdate: edit.birthdate || null,
-          phone: edit.phone || null,
-          // email updates typically require verification; omit by default.
-          // pickups_finished is usually computed; but we'll allow it for demo:
-          pickups_finished: edit.pickups,
-        }),
+        body: JSON.stringify(updated),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "Failed to save changes");
-        setSaving(false);
-        return;
-      }
+      if (!res.ok) throw new Error("Failed to save");
 
-      const u: ProfileShape = data.user;
-      setProfile(u);
+      const updatedProfile = await res.json();
+      setProfile(updatedProfile);
       setIsEditing(false);
-    } catch (e) {
-      console.error(e);
+    } catch {
       setError("Failed to save changes");
-    } finally {
-      setSaving(false);
     }
+    setIsSaving(false);
   };
 
-  const avatarSrc = profile?.avatar_url || "/avatar.png";
-  const title = profile?.role === "admin" ? "Admin" : "Volunteer";
+  const toggleSetting = (key: keyof SettingsState) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <main className="min-h-screen bg-neutral-100 text-neutral-900">
-      {/* Header: logo left, Dashboard shortcut right */}
-      <header className="bg-white">
-        <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-4">
-            <Image
-              src="/grLogo-transparent.png"
-              alt="GoodRun logo"
-              width={72}
-              height={72}
-              priority
-            />
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-full bg-[#11183A] px-4 py-2 text-white text-sm md:text-base font-medium hover:opacity-90 transition"
-            >
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
 
       {/* Main */}
       <section className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6">
-        {loading ? (
+        {!profile ? (
           <div className="py-24 text-center text-neutral-500">Loading profile…</div>
-        ) : error ? (
-          <div className="py-4 mb-6 rounded-lg bg-red-50 text-red-700 border border-red-200 px-4">
-            {error}
-          </div>
-        ) : !profile ? (
-          <div className="py-24 text-center text-neutral-500">No profile found.</div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-8 items-start">
             {/* Profile card */}
             <div className="relative rounded-2xl bg-[#11183A] text-white overflow-visible">
               <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
                 <div className="h-24 w-24 md:h-28 md:w-28 rounded-full ring-4 ring-white overflow-hidden shadow-lg">
-                  <Image src={avatarSrc} alt="Profile photo" width={120} height={120} />
+                  <Image src={profile.image || "/default-avatar.png"} alt="Profile photo" width={120} height={120} />
                 </div>
               </div>
 
               <div className="px-6 pt-20 pb-8 md:px-8 md:pt-24">
                 <h1 className="text-center text-xl md:text-2xl font-semibold">
-                  {title} / Admin
+                  {profile.name} / Admin
                 </h1>
 
                 <div className="mt-6 space-y-4 text-sm md:text-base">
@@ -264,19 +166,19 @@ export default function ProfilePage() {
                   label="Notifications"
                   description="Receive important updates about pickups"
                   enabled={settings.notif}
-                  onToggle={() => toggle("notif")}
+                  onToggle={() => toggleSetting("notif")}
                 />
                 <SettingRow
                   label="Location access"
                   description="Allow location for better routing"
                   enabled={settings.location}
-                  onToggle={() => toggle("location")}
+                  onToggle={() => toggleSetting("location")}
                 />
                 <SettingRow
                   label="Dark mode"
                   description="Use a darker color theme"
                   enabled={settings.darkmode}
-                  onToggle={() => toggle("darkmode")}
+                  onToggle={() => toggleSetting("darkmode")}
                 />
               </div>
 
@@ -286,15 +188,21 @@ export default function ProfilePage() {
                     EDIT PROFILE
                   </div>
                   <EditProfileForm
-                    form={edit}
-                    saving={saving}
-                    onChange={setEdit}
-                    onCancel={onCancel}
-                    onSave={onSave}
+                    profile={profile}
+                    saving={isSaving}
+                    onSave={handleSave}
+                    onCancel={() => setIsEditing(false)}
                   />
                 </div>
               )}
+
+              <LogoutButton />
             </div>
+          </div>
+        )}
+        {error && (
+          <div className="py-4 mb-6 rounded-lg bg-red-50 text-red-700 border border-red-200 px-4">
+            {error}
           </div>
         )}
       </section>
@@ -346,26 +254,28 @@ function SettingRow({ label, description, enabled, onToggle }: SettingRowProps) 
 /* ---------------- Edit Form ---------------- */
 
 function EditProfileForm({
-  form,
+  profile,
   saving,
-  onChange,
-  onCancel,
   onSave,
+  onCancel,
 }: {
-  form: { name: string; birthdate: string; email: string; phone: string; pickups: number };
+  profile: Profile;
   saving: boolean;
-  onChange: (next: { name: string; birthdate: string; email: string; phone: string; pickups: number }) => void;
+  onSave: (updated: Profile) => void;
   onCancel: () => void;
-  onSave: () => void;
 }) {
-  const set = (k: keyof typeof form, v: string | number) => onChange({ ...form, [k]: v as never });
+  const [form, setForm] = useState<Profile>(profile);
+
+  const set = <K extends keyof Profile>(key: K, value: Profile[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   return (
     <form
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
-        onSave();
+        onSave(form);
       }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -413,8 +323,8 @@ function EditProfileForm({
           <input
             type="number"
             min={0}
-            value={form.pickups}
-            onChange={(e) => set("pickups", Number(e.target.value))}
+            value={form.pickups_finished}
+            onChange={(e) => set("pickups_finished", Number(e.target.value))}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </label>

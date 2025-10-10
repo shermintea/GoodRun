@@ -1,8 +1,20 @@
+/*******************************************************
+* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+* File:      app/globals.css
+* Author:    IT Project – Medical Pantry – Group 17
+* Date:      11-09-2025
+* Version:   1.0
+* Purpose:   Universal styling document.
+*            Can be used to implement dark mode, fonts, etc.
+* Revisions:
+* v1.0 - 11-09-2025 - Initial implementation
+*******************************************************/
+
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #f7f4f4;
 }
 
 @theme inline {
@@ -12,6 +24,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Dark mode implementation here */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

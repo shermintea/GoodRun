@@ -10,36 +10,16 @@
 *            (extend description if more functionalities are added).
 * Revisions:
 * v1.0 - 11-09-2025 - Initial implementation of the initial page
-* v1.1 - 18-09-2029 - Made changes to the GoodRun description 
+* v1.1 - 18-09-2025 - Made changes to the GoodRun description 
+* v1.2 - 10-10-2025 - Replaced header with component
 *******************************************************/
 
-
-import Image from "next/image";
+import MedicalPantryHeader from "@/components/MedicalPantryHeader";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Top banner / header */}
-      <header className="bg-[#171e3a] text-white">
-
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center gap-3">
-          <a href="/" className="flex items-center gap-2">
-            {/* Logo */}
-            <Image
-              src="/mpLogo.png"
-              alt="Medical Pantry logo"
-              width={85}
-              height={85}
-              className="rounded-md"
-            />
-            <span className="text-3xl font-semibold tracking-tight">
-              Medical Pantry
-            </span>
-          </a>
-        </div>
-      </header>
-
-
+      <MedicalPantryHeader />
       {/* Body */}
       <section className="mx-auto max-w-6xl px-6 py-10">
         {/* Outer card spacing to mimic the grey canvas margins */}

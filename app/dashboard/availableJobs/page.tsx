@@ -12,44 +12,12 @@
 * v1.0 - Initial page layout (front end)
 * v1.1 - Updated header to use GoodRun branding
 * v1.2 - Added Dashboard shortcut and replaced logo
+* v1.3 - Moved page to dashboard/availableJobs, replaced with reusable header
 *******************************************************/
-
-import Image from "next/image";
 
 export default function AvailableJobsPage() {
     return (
         <main className="min-h-screen bg-gray-50">
-            {/* Top banner (logo on left, buttons on right) */}
-            <header className="bg-[#171e3a] text-white">
-                <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-                    {/* Left: GoodRun logo */}
-                    <a href="/" className="flex items-center gap-2">
-                        <Image
-                            src="/grLogo-alternate.png"
-                            alt="GoodRun logo"
-                            width={85}
-                            height={85}
-                            className="rounded-md"
-                        />
-                    </a>
-
-                    {/* Right: Dashboard + Profile buttons */}
-                    <div className="flex gap-3">
-                        <a
-                            href="/dashboard"
-                            className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
-                        >
-                            Dashboard
-                        </a>
-                        <a
-                            href="/profile"
-                            className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
-                        >
-                            Profile
-                        </a>
-                    </div>
-                </div>
-            </header>
 
             {/* Page content */}
             <section className="max-w-6xl mx-auto px-6 py-10 space-y-6">
@@ -63,7 +31,7 @@ export default function AvailableJobsPage() {
                     {/* Scrollable job list */}
                     <div className="md:col-span-3">
                         <div className="h-[400px] md:h-[600px] w-full rounded-lg border border-gray-200 bg-slate-100 text-slate-600 px-4 py-4 overflow-y-auto space-y-4">
-                            
+
                             {/* Example job cards */}
                             <a
                                 href="/job"
