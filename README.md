@@ -35,61 +35,27 @@ NEXTAUTH_URL=http://localhost:3000
 ```
 
 2. **Database Management**
-> Tables and test data had already been created. This step is optional for modifying the schema.
+Tables and test data had already been created. This step is optional for modifying the schema.
+
 To manage the db system, you can either download the **pgAdmin4** software, or connect through **command line** (brew install postgresql and connect).
 
-For more information see: 
+Visit the below page to view connection credentials.
 
-Confluence page: Database Information on Render
+
+3. **Database Information on Render**
+
+For more information visit the link below for a detailed documentation on Confluence: 
+
 https://group17-medical-pantry-it-project.atlassian.net/wiki/spaces/IP/pages/52297730/Database+Information+on+Render
-
-
-3. Tables and Structure
-## `organisation`
-Stores details about volunteer organisations.
-
-| Column         | Type      | Notes                         |
-|----------------|-----------|-------------------------------|
-| id             | SERIAL    | Primary Key                   |
-| name           | VARCHAR   | Organisation name             |
-| address        | VARCHAR   | Street address                |
-| contact_no     | VARCHAR   | Phone number                  |
-| office_hours   | VARCHAR   | Hours of operation            |
-
-## `jobs`
-Stores volunteer jobs. Each job belongs to an organisation.
-
-| Column          | Type        | Notes                         |
-|-----------------|------------|--------------------------------|
-| id              | SERIAL      | Primary Key                   |
-| assigned_to     | VARCHAR     | Name of volunteer (optional) |
-| progress_stage  | VARCHAR     | 'available', 'reserved', 'in delivery' |
-| deadline_date   | DATE        | Job deadline                  |
-| weight          | NUMERIC     | Approx. weight of items       |
-| value           | NUMERIC     | Approx. value of items        |
-| size            | VARCHAR     | 'tiny', 'small'               |
-| follow_up       | BOOLEAN     | Follow-up required            |
-| intake_priority | VARCHAR     | 'low', 'medium', 'high'       |
-| organisation_id | INTEGER     | FK to `organisation(id)`      |
-| created_at      | TIMESTAMP   | Auto-generated on insert      |
-
-## `users`
-Stores volunteer and admin accounts.
-
-| Column        | Type      | Notes                                |
-|---------------|-----------|--------------------------------------|
-| id            | SERIAL    | Primary Key                          |
-| name          | VARCHAR   | Full name                            |
-| email         | VARCHAR   | login email                          |
-| role          | VARCHAR   | 'volunteer' or 'admin'               |
-| password_hash | VARCHAR   | bcrypt hash of password              |
 
 
 4. Test data
 
-The test records were seeded through script runnning. To view records for testing see **scripts/seedTestRecords.sql**, or retrieve table records through dbms.
+The test records were seeded through script runnning. 
 
-To test login the **passwords are all '000'** (saved as hashes in db).
+Database schema and tables have been documented in the above link. Alternatively, you can find the seeded records for testing in **scripts/seedTestRecords.sql**, or retrieve table records directly through the dbms.
+
+> To test login the **passwords are all '000'** (saved as hashes in db).
 
 
 ## Learn More
@@ -110,6 +76,7 @@ URL: https://team-17-medical-pantry.onrender.com
 
 
 ## Project Architecture
+> 10-10-2025 pages have been moved to a nested structure for easier routing. (sorry for causing pain when merging ;-;)
 ```pgsql
 Team-17-Medical-Pantry/
 ├── app/
