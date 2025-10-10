@@ -2,54 +2,22 @@
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
 * File:      adminJobDetails/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
-* Date:      23-09-2025
-* Version:   1.1
+* Date:      10-10-2025
+* Version:   1.2
 * Purpose:   Admin job details dashboard with consistent header,
 *            profile button, job information, map placeholder, pickup
 *            information, and buttons to edit and delete a job.
 * Revisions:
 * v1.0 - Initial page layout 
 * v1.1 - Updated header: GoodRun logo on left, Dashboard + Profile buttons on right
+* v1.2 - Moved page to dashboard/adminJobDetails, replaced with reusable header
 *******************************************************/
-
-import Image from "next/image";
 
 export default function JobDetailsPage() {
   // TODO: Replace this with real data from backend
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Top banner (logo left + dashboard/profile buttons right) */}
-      <header className="bg-[#171e3a] text-white">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-          {/* Left: GoodRun logo */}
-          <a href="/" className="flex items-center">
-            <Image
-              src="/grLogo-alternate.png"
-              alt="GoodRun logo"
-              width={85}
-              height={85}
-              className="rounded-md"
-            />
-          </a>
-
-          {/* Right: Dashboard + Profile buttons */}
-          <div className="flex gap-3">
-            <a
-              href="/dashboard"
-              className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
-            >
-              Dashboard
-            </a>
-            <a
-              href="/profile"
-              className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
-            >
-              Profile
-            </a>
-          </div>
-        </div>
-      </header>
 
       {/* Page content */}
       <section className="max-w-6xl mx-auto px-6 py-10">

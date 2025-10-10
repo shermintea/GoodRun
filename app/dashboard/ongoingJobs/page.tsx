@@ -17,13 +17,13 @@
 * v1.1 - 25-09-2025 - Logo placement & Interaction: clicking "Confirm Pickup" changes the job status to
                       "DROPOFF" and the button label updates to "Confirm Drop Off".
 * v1.2 - 30-09-2025 - Updated formating to match other pages.
+* v1.3 - 10-10-2025 - Moved page to dashboard/ongoingJobs, replaced with reusable header
 *******************************************************************************************/
 
 'use client';
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 type JobStatus = 'PICKUP' | 'DROPOFF';
 type SourceType = 'stored' | 'admin_temp';
@@ -42,8 +42,8 @@ export default function AcceptedJobsPage() {
   const [jobs, setJobs] = useState<JobItem[]>([
     { id: '1', name: 'Item name', status: 'DROPOFF', address: '12 Example St, Melbourne VIC', pickupTime: 'Today 4:30 PM', source: 'stored' },
     { id: '2', name: 'Item name', status: 'DROPOFF', address: '45 River Rd, Carlton VIC', pickupTime: 'Today 5:15 PM', source: 'admin_temp' },
-    { id: '3', name: 'Item name', status: 'PICKUP',  address: '88 Station St, Fitzroy VIC',  pickupTime: 'Tomorrow 9:00 AM', source: 'stored' },
-    { id: '4', name: 'Item name', status: 'PICKUP',  address: '5 King St, Docklands VIC',   pickupTime: 'Tomorrow 11:00 AM', source: 'admin_temp' },
+    { id: '3', name: 'Item name', status: 'PICKUP', address: '88 Station St, Fitzroy VIC', pickupTime: 'Tomorrow 9:00 AM', source: 'stored' },
+    { id: '4', name: 'Item name', status: 'PICKUP', address: '5 King St, Docklands VIC', pickupTime: 'Tomorrow 11:00 AM', source: 'admin_temp' },
   ]);
 
   const sorted = useMemo(() => jobs.slice(), [jobs]);
@@ -62,58 +62,24 @@ export default function AcceptedJobsPage() {
 
     // Mock feedback
     alert(
-      `${
-        job.status === 'PICKUP' ? 'Pickup' : 'Drop Off'
+      `${job.status === 'PICKUP' ? 'Pickup' : 'Drop Off'
       } confirmed for "${job.name}" (mock)`
     );
   };
 
   return (
     <main className="min-h-screen bg-neutral-100 text-neutral-900">
-      {/* Header: logo left, blue ellipse buttons on right */}
-      {/* Top banner (logo on left, buttons on right) */}
-      <header className="bg-white">
-          <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-              {/* Left: GoodRun logo */}
-              <a href="/" className="flex items-center gap-2">
-                  <Image
-                      src="/grLogo-transparent.png"
-                      alt="GoodRun logo"
-                      width={85}
-                      height={85}
-                      className="rounded-md"
-                  />
-              </a>
-
-              {/* Right: Dashboard + Profile buttons */}
-              <div className="flex gap-3">
-                  <a
-                      href="/dashboard"
-                      className="rounded-full bg-[#11183A] px-4 py-2 text-white font-medium hover:bg-white transition"
-                  >
-                      Dashboard
-                  </a>
-                  <a
-                      href="/profile"
-                      className="rounded-full bg-[#11183A] px-4 py-2 text-white font-medium hover:bg-white transition"
-                  >
-                      Profile
-                  </a>
-              </div>
-          </div>
-      </header>
-
 
       {/* Page title panel */}
       <section className="max-w-6xl mx-auto px-6 py-5 space-y-5">
-      <div className="h-[100px] rounded-lg bg-red-700 p-6 shadow-sm text-white flex items-center">
+        <div className="h-[100px] rounded-lg bg-red-700 p-6 shadow-sm text-white flex items-center">
           <h1 className="text-2xl font-semibold">Ongoing Jobs</h1>
-      </div>
+        </div>
 
-      {/* Scrollable job list */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* For centering the column */}
-        <div className="md:col-span-3">            
+        {/* Scrollable job list */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* For centering the column */}
+          <div className="md:col-span-3">
             <div className="rounded-lg bg-[#11183A] h-[1150px] mx-auto w-full rounded-lg border px-4 md:px-6 lg:px-8 py-6 space-y-5 overflow-y-auto">
               {sorted.map((job) => (
                 <JobCard key={job.id} job={job} onConfirm={onConfirm} />
@@ -125,9 +91,9 @@ export default function AcceptedJobsPage() {
                 </div>
               )}
             </div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     </main>
   );
 }

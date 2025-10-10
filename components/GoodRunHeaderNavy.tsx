@@ -1,0 +1,55 @@
+/*******************************************************
+* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+* File:      components/GoodRunHeader.tsx
+* Author:    IT Project – Medical Pantry – Group 17
+* Date:      10-10-2025
+* Version:   1.0
+* Purpose:   Header component with Good Run Logo.
+*            Leads to dashboard on click, redirects to login
+*            if session expired.
+* Revisions:
+* v1.0 - 10-10-2025 - Initial implementation
+*******************************************************/
+
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+
+export default function Header() {
+    const { data: session } = useSession();
+
+    return (
+        <header className="bg-[#171e3a] text-white">
+            <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
+                {/* Left: GoodRun logo */}
+                <Link href={session ? "/dashboard" : "/"} className="flex items-center gap-4">
+                    <Image
+                        src="/grLogo-alternate.png"
+                        alt="GoodRun logo"
+                        width={85}
+                        height={85}
+                        className="rounded-md"
+                    />
+                </Link>
+
+                {/* Right: Dashboard + Profile buttons */}
+                <div className="flex gap-3">
+                    <a
+                        href="/dashboard"
+                        className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
+                    >
+                        Dashboard
+                    </a>
+                    <a
+                        href="dashboard/profile"
+                        className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
+                    >
+                        Profile
+                    </a>
+                </div>
+            </div>
+        </header>
+    );
+}

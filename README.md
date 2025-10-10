@@ -25,12 +25,13 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. All developers share the same database for testing purposes. Here is a guide for usage:
 
 1. **Create .env.local file at root of repository**
+> Environment for deployed website is already configured on Render, include this file for **local testing**.
 ```.env.local
 // .env.local
-DATABASE_URL=postgresql://goodrun_user:W1yoj70VKtjKjOI9W6BkBrb5lqGYi8Mg@dpg-d3hk7khr0fns73cf1dj0-a.oregon-postgres.render.com/goodrun
+DATABASE_URL=[external database URL]        // Link can be found in confluence doc linked below
 NODE_ENV=development
 NEXTAUTH_SECRET=[generate your own key]     // Command to generate: openssl rand -base64 32
-NEXTAUTH_URL=https://team-17-medical-pantry.onrender.com
+NEXTAUTH_URL=http://localhost:3000
 ```
 
 2. **Database Management**
@@ -38,6 +39,8 @@ NEXTAUTH_URL=https://team-17-medical-pantry.onrender.com
 To manage the db system, you can either download the **pgAdmin4** software, or connect through **command line** (brew install postgresql and connect).
 
 For more information see: 
+
+Confluence page: Database Information on Render
 https://group17-medical-pantry-it-project.atlassian.net/wiki/spaces/IP/pages/52297730/Database+Information+on+Render
 
 
@@ -101,6 +104,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 ## Deployment
 
 The GoodRun Volunteer App is deployed on **Render**.
+Deployment is automatic upon git push to **development** branch.
 
 URL: https://team-17-medical-pantry.onrender.com
 
@@ -109,28 +113,49 @@ URL: https://team-17-medical-pantry.onrender.com
 ```pgsql
 Team-17-Medical-Pantry/
 ├── app/
-│   ├── globals.css
-│   ├── layout.tsx
-│   ├── page.tsx
-│   ├── login/
-│   │   └── page.tsx
-│   └── api/
-│       └── login/
-│           └── route.ts
-│       └── job/
-│           └── route.ts
-├── components/...
+│   ├── (auth)/
+│   │   ├── login/
+│   │   │   └── page.tsx              # Volunteer login page with NextAuth session handling
+│   │   └── layout.tsx                # Public layout that redirects authenticated users to /dashboard
+│   │
+│   ├── api/
+│   │   ├── auth/
+│   │   │   └── [...nextauth]/route.ts # NextAuth.js configuration endpoint (handles sign-in sessions)
+│   │   └── job/route.ts               # REST API endpoint for job operations (CRUD requests)
+│   │
+│   ├── dashboard/
+│   │   ├── adminJobDetails/page.tsx   # Page for admin users to view/edit specific job details
+│   │   ├── availableJobs/page.tsx     # Lists all available volunteer jobs
+│   │   ├── jobHistory/page.tsx        # Displays the user's completed job history
+│   │   ├── ongoingJobs/page.tsx       # Shows current/active job assignments
+│   │   ├── profile/page.tsx           # Displays and edits volunteer profile information
+│   │   ├── layout.tsx                 # Protected layout wrapper for authenticated routes (GoodRun header)
+│   │   ├── mapview.tsx                # Embedded map component for job visualization
+│   │   └── providers.tsx              # Context providers specific to dashboard pages
+│   │
+│   ├── globals.css                    # Global stylesheet for the entire application
+│   ├── layout.tsx                     # Root layout that wraps all routes and sets up base providers
+│   ├── page.tsx                       # Public landing page (Medical Pantry home)
+│   └── providers.tsx                  # Global React context (e.g., NextAuth, theme providers)
+│
+├── components/
+│   └── ...                            # Reusable UI elements such as headers, buttons, and layout wrappers
+│
+├── public/
+│   └── ...                            # Static assets (e.g., images, icons, fonts)
+│
 ├── lib/
-│   └── db.ts
-├── scripts/...
-├── .env.local
-├── package.json
-├── tsconfig.json
-└── README.md
+│   ├── auth.ts                        # NextAuth configuration and session options
+│   └── db.ts                          # Database connection setup (PostgreSQL)
+│
+├── scripts/
+│   └── ...                            # Developer scripts and helper utilities
+│
+├── types/
+│   └── next-auth.d.ts                 # TypeScript type overrides for NextAuth session/user objects
+│
+├── .env.local                         # Environment variables for local development (never committed)
+├── package.json                       # Project dependencies and build scripts
+├── tsconfig.json                      # TypeScript configuration file
+└── README.md                          # Project documentation
 ```
-Folder descriptions:
-- *app/* contains Next.js pages
-- *components/* contains reusable UI elements
-- *lib/* contains database connection code 
-- *scripts/* contains utility scripts
-- *app/api/* handles the backend login API

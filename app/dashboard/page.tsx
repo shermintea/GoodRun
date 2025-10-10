@@ -3,7 +3,7 @@
 * File:      dashboard/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      10-10-2025
-* Version:   1.8
+* Version:   1.9
 * Purpose:   Volunteer dashboard with consistent header,
 *            profile button, welcome message, jobs overview,
 *            and map placeholder.
@@ -18,11 +18,11 @@
 * v1.6 - Implemented map view
 * v1.7 - Added dynamic loading for map view
 * v1.8 - Implemented login session 
+* v1.9 - Replaced with reusable header
 *******************************************************/
 
 //"use client";     dashboard is now server-side
 
-import Image from "next/image";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -46,28 +46,6 @@ export default async function DashboardPage() {
 
     return (
         <main className="min-h-screen bg-gray-50">
-            {/* Top banner (centered logo + profile button right corner) */}
-            <header className="relative bg-[#171e3a] text-white">
-                <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-center">
-                    <a href="/" className="flex flex-col items-center gap-2">
-                        <Image
-                            src="/grLogo-alternate.png"
-                            alt="GoodRun logo"
-                            width={90}
-                            height={90}
-                            className="rounded-md"
-                        />
-                    </a>
-
-                    {/* Profile shortcut (absolute right corner) */}
-                    <a
-                        href="/profile"
-                        className="absolute right-6 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
-                    >
-                        Profile
-                    </a>
-                </div>
-            </header>
 
             {/* Dashboard content */}
             <section className="max-w-6xl mx-auto px-6 py-10">
@@ -91,7 +69,7 @@ export default async function DashboardPage() {
                                         Click to update details.
                                     </p>
                                     <a
-                                        href="/ongoingJobs"
+                                        href="dashboard/ongoingJobs"
                                         className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium hover:bg-white"
                                     >
                                         Update job
@@ -103,7 +81,7 @@ export default async function DashboardPage() {
                                         No active jobs at the moment.
                                     </p>
                                     <a
-                                        href="/ongoingJobs"
+                                        href="dashboard/ongoingJobs"
                                         className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
                                     >
                                         View Ongoing Jobs
@@ -119,7 +97,7 @@ export default async function DashboardPage() {
                                 Job listings will show here.
                             </p>
                             <a
-                                href="/availableJobs"
+                                href="dashboard/availableJobs"
                                 className="mt-4 inline-block rounded-md bg-[#171e3a] px-4 py-2 text-white font-medium text-center hover:bg-[#0f152c] transition"
                             >
                                 View Available Jobs
@@ -133,7 +111,7 @@ export default async function DashboardPage() {
                                 Completed jobs will appear here.
                             </p>
                             <a
-                                href="/jobHistory"
+                                href="dashboard/jobHistory"
                                 className="mt-4 inline-block rounded-md bg-[#171e3a] px-4 py-2 text-white font-medium text-center hover:bg-[#0f152c] transition"
                             >
                                 View Job History

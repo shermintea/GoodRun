@@ -12,13 +12,14 @@
 * v1.1 - Added editing function to personal details 
 * v1.2 - Header: GoodRun logo (left) + Dashboard shortcut (right)
 * v1.3 - Modified so that profile edits are persistant with localstorage
+* v1.4 - Added session-based header redirection
+* v1.5 - Moved page to dashboard/profile, replaced with reusable header
 *******************************************************/
 
 'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 
 type SettingsState = {
   notif: boolean;
@@ -46,6 +47,7 @@ function formatDate(isoString: string) {
 }
 
 export default function ProfilePage() {
+
   const [settings, setSettings] = useState<SettingsState>({
     notif: true,
     location: true,
@@ -60,7 +62,7 @@ export default function ProfilePage() {
     pickups: 42,
   });
 
-  useEffect(()=>{
+  useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (stored) setProfile(JSON.parse(stored));
   }, []);
@@ -72,29 +74,6 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-neutral-100 text-neutral-900">
-      {/* Header: logo left, Dashboard shortcut right */}
-      <header className="bg-white">
-        <div className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-4">
-            <Image
-              src="/grLogo-transparent.png"
-              alt="GoodRun logo"
-              width={72}
-              height={72}
-              priority
-            />
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-full bg-[#11183A] px-4 py-2 text-white text-sm md:text-base font-medium hover:opacity-90 transition"
-            >
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
 
       {/* Main */}
       <section className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6">

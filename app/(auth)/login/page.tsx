@@ -3,7 +3,7 @@
 * File:      login/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      10-10-2025
-* Version:   2.1
+* Version:   2.2
 * Purpose:   Implements the volunteer login page with secure
 *            authentication form, styled header with logo, and
 *            user-friendly navigation (e.g. forgot password link).
@@ -11,29 +11,22 @@
 * v1.0 - 11-09-2025 - Initial implementation of login UI
 * v2.0 - 09-10-2025 - Added NextAuth login session and db integration
 * v2.1 - 10-10-2025 - Added loading state and debug lines
+* v2.2 - 10-10-2025 - Redirect session users to dashboard directly
+* v2.3 - 10-10-2025 - Replaced with reusable header
 *******************************************************/
 
 "use client";
 
-import Image from "next/image";
-import { useSession, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function LoginPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/dashboard");
-      console.log("Session status:", status, session); // debug
-    }
-  }, [status, router]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,36 +48,10 @@ export default function LoginPage() {
     }
   };
 
-  // Render loading state
-  if (status === "loading") {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </main>
-    );
-  }
-
   // Front-end page render
   // TO-DO: add remember me button
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Top banner */}
-      <header className="bg-[#171e3a] text-white">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center gap-3">
-          <a href="/" className="flex items-center gap-2">
-            <Image
-              src="/mpLogo.png"
-              alt="Medical Pantry logo"
-              width={85}
-              height={85}
-              className="rounded-md"
-            />
-            <span className="text-3xl font-semibold tracking-tight">
-              Medical Pantry
-            </span>
-          </a>
-        </div>
-      </header>
 
       {/* Login form */}
       <section className="mx-auto max-w-md px-6 mt-40">
