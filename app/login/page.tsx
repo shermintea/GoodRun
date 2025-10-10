@@ -2,47 +2,67 @@
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
 * File:      login/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
-* Date:      12-09-2025
-* Version:   1.0
+* Date:      10-10-2025
+* Version:   2.1
 * Purpose:   Implements the volunteer login page with secure
 *            authentication form, styled header with logo, and
 *            user-friendly navigation (e.g. forgot password link).
 * Revisions:
 * v1.0 - 11-09-2025 - Initial implementation of login UI
 * v2.0 - 09-10-2025 - Added NextAuth login session and db integration
+* v2.1 - 10-10-2025 - Added loading state and debug lines
 *******************************************************/
 
-// enables state and fetch
-"use client"
+"use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+      console.log("Session status:", status, session); // debug
+    }
+  }, [status, router]);
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // NextAuth Sign in
     const result = await signIn("credentials", {
       redirect: false,
       email,
       password,
+      callbackUrl: "/dashboard",
     });
+    console.log("signIn result", result); // debug
 
     if (result?.error) {
-      setError("Invalid email or password");
-    } else {
+      setError("Invalid email or password. Please try again.");
+    } else if (result?.ok) {
       router.push("/dashboard");
     }
   };
+
+  // Render loading state
+  if (status === "loading") {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </main>
+    );
+  }
 
   // Front-end page render
   // TO-DO: add remember me button

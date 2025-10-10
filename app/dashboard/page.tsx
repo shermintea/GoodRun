@@ -2,8 +2,8 @@
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
 * File:      dashboard/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
-* Date:      15-09-2025
-* Version:   1.4
+* Date:      10-10-2025
+* Version:   1.8
 * Purpose:   Volunteer dashboard with consistent header,
 *            profile button, welcome message, jobs overview,
 *            and map placeholder.
@@ -17,9 +17,10 @@
 *        reflected in Welcome message
 * v1.6 - Implemented map view
 * v1.7 - Added dynamic loading for map view
+* v1.8 - Implemented login session 
 *******************************************************/
 
-//"use client";
+//"use client";     dashboard is now server-side
 
 import Image from "next/image";
 import { getServerSession } from "next-auth/next";
