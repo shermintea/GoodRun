@@ -43,7 +43,7 @@ export default function Header() {
                         Dashboard
                     </a>
                     <a
-                        href="dashboard/profile"
+                        href="/dashboard/profile"
                         className="rounded-full bg-white/90 px-4 py-2 text-[#171e3a] font-medium hover:bg-white transition"
                     >
                         Profile
