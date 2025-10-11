@@ -14,7 +14,7 @@
 * v1.2 - 10-10-2025 - Replaced header with component
 *******************************************************/
 
-import MedicalPantryHeader from "@/components/MedicalPantryHeader";
+import MedicalPantryHeader from "@/components/ui/MedicalPantryHeader";
 
 export default function Home() {
   return (
