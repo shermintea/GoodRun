@@ -1,6 +1,6 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      components/LogoutButton.tsx
+* File:      components/ui/LogoutButton.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      10-10-2025
 * Version:   1.0
