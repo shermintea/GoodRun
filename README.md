@@ -49,7 +49,7 @@ For more information visit the link below for a detailed documentation on Conflu
 https://group17-medical-pantry-it-project.atlassian.net/wiki/spaces/IP/pages/52297730/Database+Information+on+Render
 
 
-4. Test data
+4. **Test data**
 
 The test records were seeded through script runnning. 
 
@@ -81,8 +81,7 @@ URL: https://team-17-medical-pantry.onrender.com
 Team-17-Medical-Pantry/
 ├── app/
 │   ├── (auth)/
-│   │   ├── login/
-│   │   │   └── page.tsx              # Volunteer login page with NextAuth session handling
+│   │   ├── login/page.tsx            # Volunteer login page with NextAuth session handling
 │   │   └── layout.tsx                # Public layout that redirects authenticated users to /dashboard
 │   │
 │   ├── api/
@@ -97,16 +96,15 @@ Team-17-Medical-Pantry/
 │   │   ├── ongoingJobs/page.tsx       # Shows current/active job assignments
 │   │   ├── profile/page.tsx           # Displays and edits volunteer profile information
 │   │   ├── layout.tsx                 # Protected layout wrapper for authenticated routes (GoodRun header)
-│   │   ├── mapview.tsx                # Embedded map component for job visualization
-│   │   └── providers.tsx              # Context providers specific to dashboard pages
+│   │   └── mapview.tsx                # Embedded map component for job visualization
 │   │
 │   ├── globals.css                    # Global stylesheet for the entire application
 │   ├── layout.tsx                     # Root layout that wraps all routes and sets up base providers
-│   ├── page.tsx                       # Public landing page (Medical Pantry home)
-│   └── providers.tsx                  # Global React context (e.g., NextAuth, theme providers)
+│   └── page.tsx                       # Public landing page (Medical Pantry home)
 │
-├── components/
-│   └── ...                            # Reusable UI elements such as headers, buttons, and layout wrappers
+├── components/                        # Reusable UI elements such as headers, buttons, and layout wrappers
+│   └── ui
+│   └── wrappers                       
 │
 ├── public/
 │   └── ...                            # Static assets (e.g., images, icons, fonts)

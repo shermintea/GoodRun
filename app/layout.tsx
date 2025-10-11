@@ -28,6 +28,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Good Run",
   description: "Volunteer platform by Medical Pantry",
+  icons: "/favicon.ico",
 };
 
 export default function RootLayout({
