@@ -10,12 +10,12 @@
 * v1.0 - 10-10-2025 - Initial implementation
 *******************************************************/
 
-import MedicalPantryHeader from "@/components/MedicalPantryHeader";
-import PublicLayout from "@/components/PublicLayout";
+import MedicalPantryHeader from "@/components/ui/MedicalPantryHeader";
+import PublicWrapper from "@/components/wrappers/PublicWrapper";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-    return <PublicLayout>
+    return <PublicWrapper>
         <MedicalPantryHeader />
         <main className="min-h-screen bg-gray-50">{children}</main>
-    </PublicLayout>;
+    </PublicWrapper>;
 }

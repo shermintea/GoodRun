@@ -10,14 +10,14 @@
 * v1.0 - 10-10-2025 - Initial implementation
 *******************************************************/
 
-import GoodRunHeader from "@/components/GoodRunHeaderNavy";
-import ProtectedLayout from "@/components/ProtectedLayout";
+import GoodRunHeader from "@/components/ui/GoodRunHeaderNavy";
+import ProtectedWrapper from "@/components/wrappers/ProtectedWrapper";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
-        <ProtectedLayout>
+        <ProtectedWrapper>
             <GoodRunHeader />
             <main className="min-h-screen bg-gray-50">{children}</main>
-        </ProtectedLayout>
+        </ProtectedWrapper>
     );
 }

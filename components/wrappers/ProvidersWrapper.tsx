@@ -1,14 +1,13 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      app/providers.tsx
+* File:      components/wrappers/ProvidersWrapper.tsx
 * Author:    IT Project – Medical Pantry – Group 17
-* Date:      10-10-2025
-* Version:   1.0
-* Purpose:   Wraps the Next.js app in client-side providers,
-*            including NextAuth SessionProvider for access
-*            to authentication session across components.
+* Date:      11-10-2025
+* Version:   2.0
+* Purpose:   Enables access to client-side NextAuth SessionProvider.
 * Revisions: 
-* v1.0 - Initial implementation
+* v1.0 - 10-10-2025 - Initial implementation
+* v2.0 - 11-10-2025 - Rearranged file structure and namings
 *******************************************************/
 
 "use client";

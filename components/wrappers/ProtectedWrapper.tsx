@@ -1,13 +1,14 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      components/ProtectedLayout.tsx
+* File:      components/wrappers/ProtectedLayout.tsx
 * Author:    IT Project – Medical Pantry – Group 17
-* Date:      10-10-2025
-* Version:   1.0
-* Purpose:   A wrapper component for all pages that require authentication.
+* Date:      11-10-2025
+* Version:   2.0
+* Purpose:   Centralizes authentication-based routing logic.
 *            Redirect unauthenticated/expired session users to login.
 * Revisions:
 * v1.0 - 10-10-2025 - Initial implementation
+* v2.0 - 11-10-2025 - Rearranged file structure and namings
 *******************************************************/
 
 "use client";

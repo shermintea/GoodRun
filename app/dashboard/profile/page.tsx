@@ -25,7 +25,7 @@
 import { useState, useEffect } from 'react';
 import { useSession, signIn } from "next-auth/react";
 import Image from "next/image";
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/ui/LogoutButton";
 
 /* ---------- Types ---------- */
 type Profile = {
