@@ -62,7 +62,6 @@ export default function OngoingJobsPage() {
   useEffect(() => {
     const tryAutoGeo = async () => {
       try {
-        // @ts-expect-error: permissions typing not universal
         const status = await navigator.permissions?.query?.({ name: 'geolocation' });
         if (status?.state === 'granted') {
           navigator.geolocation.getCurrentPosition(
