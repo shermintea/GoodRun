@@ -192,8 +192,8 @@ export default function OngoingJobsPage() {
                 disabled={!userLoc}
                 title={!userLoc ? 'Enable location to sort by distance' : 'Sort by distance'}
               >
-                <option value="nearest">Nearest first</option>
-                <option value="farthest">Farthest first</option>
+                <option value="nearest">Nearest </option>
+                <option value="farthest">Farthest </option>
               </select>
             </div>
 
@@ -207,8 +207,8 @@ export default function OngoingJobsPage() {
                 aria-label="Sort by urgency"
               >
                 <option value="none">None</option>
-                <option value="highFirst">Highest first</option>
-                <option value="lowFirst">Lowest first</option>
+                <option value="highFirst">Highest </option>
+                <option value="lowFirst">Lowest </option>
               </select>
             </div>
           </div>
