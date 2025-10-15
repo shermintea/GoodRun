@@ -3,7 +3,7 @@
 * File:      page.tsx  (Accepted/Ongoing Jobs)
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      25-09-2025
-* Version:   1.5
+* Version:   2.0
 * Purpose:   - Display list of currently accepted jobs 
 *            - Show job source (stored in DB vs admin-created) 
 *            - Provide actions: Confirm Pickup / Confirm Drop Off, View Details 
@@ -19,64 +19,106 @@
 * v1.3 - Moved page to dashboard/ongoingJobs with reusable header.
 * v1.4 - Added distance-based filter, sorting with GPS and add the sort-by dropdown.
 * v1.5 - Added urgency-based filter and adjust the format design
+* v2.0 - Show the current volunteer’s ongoing jobs fed from Postgres.
 ******************************************************************************************/
 
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
-type JobStatus = 'PICKUP' | 'DROPOFF';
-type SourceType = 'stored' | 'admin_temp';
-type Urgency = 'LOW' | 'MEDIUM' | 'HIGH';
+/* ---------- Types ---------- */
+
+type JobStatus = "PICKUP" | "DROPOFF";
+type SourceType = "stored" | "admin_temp";
+type Urgency = "LOW" | "MEDIUM" | "HIGH";
 
 type JobItem = {
   id: string;
   name: string;
-  status: JobStatus;
+  status: JobStatus;            // derives from DB stage
   address: string;
-  pickupTime: string;
-  source: SourceType;
-  lat?: number; // optional until DB provides coords
+  pickupTime: string;           // human readable
+  source: SourceType;           // API returns "stored"
+  lat?: number;                 // optional until you add in DB
   lng?: number;
-  urgency?: Urgency; // defaults to MEDIUM in UI
+  urgency?: Urgency;            // optional; default MEDIUM
 };
 
-export default function OngoingJobsPage() {
-  // Mock data (add lat/lng/urgency as backend provides)
-  const [jobs, setJobs] = useState<JobItem[]>([
-    { id: '1', name: 'Item name', status: 'DROPOFF', address: '12 Example St, Melbourne VIC', pickupTime: 'Today 4:30 PM', source: 'stored', urgency: 'HIGH' },
-    { id: '2', name: 'Item name', status: 'DROPOFF', address: '45 River Rd, Carlton VIC', pickupTime: 'Today 5:15 PM', source: 'admin_temp', urgency: 'MEDIUM' },
-    { id: '3', name: 'Item name', status: 'PICKUP', address: '88 Station St, Fitzroy VIC', pickupTime: 'Tomorrow 9:00 AM', source: 'stored', urgency: 'LOW' },
-    { id: '4', name: 'Item name', status: 'PICKUP', address: '5 King St, Docklands VIC', pickupTime: 'Tomorrow 11:00 AM', source: 'admin_temp', urgency: 'HIGH' },
-  ]);
+/* ---------- Data hook: load & poll ongoing jobs ---------- */
 
-  // Distance / urgency UI state (same as Available Jobs)
+function useOngoingJobs() {
+  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const load = async () => {
+      try {
+        const res = await fetch("/api/jobs/ongoing", { cache: "no-store" });
+        const data = await res.json();
+        if (!alive) return;
+        if (!res.ok) {
+          setError(data?.error ?? "Failed to load jobs");
+        } else {
+          setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+          setError("");
+        }
+      } catch {
+        if (alive) setError("Failed to load jobs");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+
+    load();
+    timer = setInterval(load, 8000); // poll so admin-created jobs appear
+
+    return () => {
+      alive = false;
+      if (timer) clearInterval(timer);
+    };
+  }, []);
+
+  return { jobs, setJobs, loading, error };
+}
+
+/* ---------- Page ---------- */
+
+export default function OngoingJobsPage() {
+  const { jobs, setJobs, loading, error } = useOngoingJobs();
+
+  // distance / urgency UI
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState<number>(10);
   const [applyRadius, setApplyRadius] = useState<boolean>(true);
-  const [sortOrder, setSortOrder] = useState<'nearest' | 'farthest'>('nearest');
-  const [urgencySort, setUrgencySort] = useState<'none' | 'highFirst' | 'lowFirst'>('none');
+  const [sortOrder, setSortOrder] = useState<"nearest" | "farthest">("nearest");
+  const [urgencySort, setUrgencySort] = useState<"none" | "highFirst" | "lowFirst">("none");
 
-  // Auto-use geolocation only if permission already granted (no prompt)
+  // try to read user location without prompting if already granted
   useEffect(() => {
-    const tryAutoGeo = async () => {
+    (async () => {
       try {
-        const status = await navigator.permissions?.query?.({ name: 'geolocation' });
-        if (status?.state === 'granted') {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => { }
-          );
+        if (typeof navigator !== "undefined" && "permissions" in navigator) {
+          // @ts-ignore - permissions is not fully typed in TS DOM
+          const st = await navigator.permissions?.query?.({ name: "geolocation" });
+          if (st?.state === "granted") {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+              () => {}
+            );
+          }
         }
       } catch {
-        // silently ignore if not supported
+        // ignore
       }
-    };
-    tryAutoGeo();
+    })();
   }, []);
 
-  // Helpers
+  // helpers
   const toRad = (x: number) => (x * Math.PI) / 180;
   const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
     const R = 6371;
@@ -84,57 +126,69 @@ export default function OngoingJobsPage() {
     const dLng = toRad(b.lng - a.lng);
     const lat1 = toRad(a.lat);
     const lat2 = toRad(b.lat);
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(h));
   };
-  const urgencyRank = (u: Urgency) => (u === 'HIGH' ? 3 : u === 'MEDIUM' ? 2 : 1);
+  const urgencyRank = (u: Urgency) => (u === "HIGH" ? 3 : u === "MEDIUM" ? 2 : 1);
 
-  // Compute list (urgency sort then distance sort; filter by radius if enabled)
+  // compute displayed list with distance + urgency logic
   const displayed = useMemo(() => {
-    let list = jobs.map(j => {
-      const has = typeof j.lat === 'number' && typeof j.lng === 'number';
+    let list = jobs.map((j) => {
+      const has = typeof j.lat === "number" && typeof j.lng === "number";
       const distanceKm = userLoc && has ? haversineKm(userLoc, { lat: j.lat!, lng: j.lng! }) : null;
-      return { ...j, urgency: j.urgency ?? 'MEDIUM', distanceKm };
+      return { ...j, urgency: j.urgency ?? "MEDIUM", distanceKm };
     });
 
-    // Limit to radius (optional). Unknown-distance stays visible.
     if (userLoc && applyRadius) {
-      list = list.filter(j => (j.distanceKm == null ? true : j.distanceKm <= radiusKm));
+      list = list.filter((j) => (j.distanceKm == null ? true : j.distanceKm <= radiusKm));
     }
 
-    // Sort by urgency (optional)
-    if (urgencySort !== 'none') {
+    if (urgencySort !== "none") {
       list.sort((a, b) => {
         const diff = urgencyRank(b.urgency as Urgency) - urgencyRank(a.urgency as Urgency); // HIGH→LOW
-        return urgencySort === 'highFirst' ? diff : -diff; // LOW→HIGH
+        return urgencySort === "highFirst" ? diff : -diff; // LOW→HIGH
       });
     }
 
-    // Sort by distance: known first; then nearest/farthest
     if (userLoc) {
       list.sort((a, b) => {
-        const da = a.distanceKm, db = b.distanceKm;
-        const aKnown = da != null, bKnown = db != null;
+        const da = a.distanceKm,
+          db = b.distanceKm;
+        const aKnown = da != null,
+          bKnown = db != null;
         if (aKnown && !bKnown) return -1;
         if (!aKnown && bKnown) return 1;
         if (!aKnown && !bKnown) return 0;
-        return sortOrder === 'nearest' ? (da! - db!) : (db! - da!);
+        return sortOrder === "nearest" ? (da! - db!) : (db! - da!);
       });
     }
 
     return list;
   }, [jobs, userLoc, radiusKm, applyRadius, sortOrder, urgencySort]);
 
-  // Confirm logic (mock)
-  const onConfirm = (job: JobItem) => {
-    setJobs(prev =>
-      prev.map(j =>
-        j.id === job.id
-          ? { ...j, status: j.status === 'PICKUP' ? 'DROPOFF' : 'DROPOFF' }
-          : j
-      )
-    );
-    alert(`${job.status === 'PICKUP' ? 'Pickup' : 'Drop Off'} confirmed for "${job.name}" (mock)`);
+  // confirm handler → advance stage in DB
+  const onConfirm = async (job: JobItem) => {
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/advance`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        alert(data?.error ?? "Failed to update job");
+        return;
+      }
+
+      // optimistic UI:
+      //  - PICKUP confirmed → show as DROPOFF
+      //  - DROPOFF confirmed → remove (will be delivered)
+      setJobs((prev) =>
+        job.status === "PICKUP"
+          ? prev.map((j) => (j.id === job.id ? { ...j, status: "DROPOFF" } : j))
+          : prev.filter((j) => j.id !== job.id)
+      );
+    } catch {
+      alert("Network error");
+    }
   };
 
   return (
@@ -145,7 +199,7 @@ export default function OngoingJobsPage() {
           <h1 className="text-2xl font-semibold">Ongoing Jobs</h1>
         </div>
 
-        {/* Controls (match Available Jobs) */}
+        {/* Controls */}
         <div className="rounded-xl bg-white p-4 shadow-sm">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Distance */}
@@ -165,7 +219,7 @@ export default function OngoingJobsPage() {
               </div>
               {!userLoc && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Tip: allow location in browser to enable distance sorting.
+                  Tip: allow location in the browser to enable distance sorting.
                 </p>
               )}
               <div className="flex items-center gap-2 mt-2">
@@ -176,7 +230,10 @@ export default function OngoingJobsPage() {
                   onChange={(e) => setApplyRadius(e.target.checked)}
                   disabled={!userLoc}
                 />
-                <label htmlFor="limit-radius" className={`text-sm ${!userLoc ? 'text-gray-400' : ''}`}>
+                <label
+                  htmlFor="limit-radius"
+                  className={`text-sm ${!userLoc ? "text-gray-400" : ""}`}
+                >
                   Limit to radius
                 </label>
               </div>
@@ -187,13 +244,19 @@ export default function OngoingJobsPage() {
               <div className="text-xs font-medium text-gray-500 mb-2">Sort by distance</div>
               <select
                 value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as 'nearest' | 'farthest')}
+                onChange={(e) =>
+                  setSortOrder(e.target.value as "nearest" | "farthest")
+                }
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 disabled={!userLoc}
-                title={!userLoc ? 'Enable location to sort by distance' : 'Sort by distance'}
+                title={
+                  !userLoc
+                    ? "Enable location to sort by distance"
+                    : "Sort by distance"
+                }
               >
-                <option value="nearest">Nearest </option>
-                <option value="farthest">Farthest </option>
+                <option value="nearest">Nearest</option>
+                <option value="farthest">Farthest</option>
               </select>
             </div>
 
@@ -202,42 +265,50 @@ export default function OngoingJobsPage() {
               <div className="text-xs font-medium text-gray-500 mb-2">Sort by urgency</div>
               <select
                 value={urgencySort}
-                onChange={(e) => setUrgencySort(e.target.value as 'none' | 'highFirst' | 'lowFirst')}
+                onChange={(e) =>
+                  setUrgencySort(e.target.value as "none" | "highFirst" | "lowFirst")
+                }
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 aria-label="Sort by urgency"
               >
                 <option value="none">None</option>
-                <option value="highFirst">Highest </option>
-                <option value="lowFirst">Lowest </option>
+                <option value="highFirst">Highest</option>
+                <option value="lowFirst">Lowest</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* List */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-3">
-            <div className="rounded-lg bg-[#11183A] h-[1150px] mx-auto w-full rounded-lg border px-4 md:px-6 lg:px-8 py-6 space-y-5 overflow-y-auto">
-              {displayed.map((job) => (
-                <JobCard key={job.id} job={job as JobItem & { distanceKm?: number | null }} onConfirm={onConfirm} />
-              ))}
-
-              {displayed.length === 0 && (
-                <div className="rounded-2xl bg-white p-6 text-center text-neutral-600 shadow-sm">
-                  {userLoc
-                    ? 'No accepted jobs match these filters.'
-                    : 'Allow location (browser/site settings) to filter by distance, or adjust urgency sort.'}
-                </div>
-              )}
+        <div className="rounded-lg bg-[#11183A] h-[1150px] mx-auto w-full border px-4 md:px-6 lg:px-8 py-6 space-y-5 overflow-y-auto">
+          {loading ? (
+            <div className="rounded-2xl bg-white p-6 text-center text-neutral-600 shadow-sm">
+              Loading jobs…
             </div>
-          </div>
+          ) : error ? (
+            <div className="rounded-2xl bg-red-50 p-6 text-center text-red-700 shadow-sm">
+              {error}
+            </div>
+          ) : displayed.length === 0 ? (
+            <div className="rounded-2xl bg-white p-6 text-center text-neutral-600 shadow-sm">
+              No accepted jobs yet. When an admin assigns you a job it will appear here automatically.
+            </div>
+          ) : (
+            displayed.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job as JobItem & { distanceKm?: number | null }}
+                onConfirm={onConfirm}
+              />
+            ))
+          )}
         </div>
       </section>
     </main>
   );
 }
 
-/* -------------------- Presentational components -------------------- */
+/* ---------- Presentational card ---------- */
 
 function JobCard({
   job,
@@ -246,11 +317,11 @@ function JobCard({
   job: JobItem & { distanceKm?: number | null };
   onConfirm: (job: JobItem) => void;
 }) {
-  const confirmLabel = job.status === 'PICKUP' ? 'Confirm Pickup' : 'Confirm Drop Off';
+  const confirmLabel = job.status === "PICKUP" ? "Confirm Pickup" : "Confirm Drop Off";
   const sourceBadge =
-    job.source === 'stored'
-      ? { text: 'Stored in DB', classes: 'bg-emerald-100 text-emerald-700' }
-      : { text: 'Admin-created', classes: 'bg-amber-100 text-amber-700' };
+    job.source === "stored"
+      ? { text: "Stored in DB", classes: "bg-emerald-100 text-emerald-700" }
+      : { text: "Admin-created", classes: "bg-amber-100 text-amber-700" };
 
   return (
     <article className="rounded-2xl bg-white p-5 shadow-sm">
@@ -263,15 +334,15 @@ function JobCard({
 
       <div className="space-y-1 text-sm">
         <div>
-          <span className="font-semibold">Status:</span>{' '}
-          {job.status === 'PICKUP' ? 'Awaiting pickup' : 'Awaiting drop off'}
+          <span className="font-semibold">Status:</span>{" "}
+          {job.status === "PICKUP" ? "Awaiting pickup" : "Awaiting drop off"}
         </div>
         <div>
           <span className="font-semibold">Address:</span> {job.address}
         </div>
-        {typeof job.distanceKm === 'number' && (
+        {typeof job.distanceKm === "number" && (
           <div>
-            <span className="font-semibold">Distance:</span>{' '}
+            <span className="font-semibold">Distance:</span>{" "}
             {job.distanceKm.toFixed(1)} km
           </div>
         )}
@@ -301,3 +372,12 @@ function JobCard({
     </article>
   );
 }
+
+2/2
+
+
+
+
+
+
+
