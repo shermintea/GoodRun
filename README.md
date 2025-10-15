@@ -87,14 +87,18 @@ Team-17-Medical-Pantry/
 │   ├── api/
 │   │   ├── auth/
 │   │   │   └── [...nextauth]/route.ts # NextAuth.js configuration endpoint (handles sign-in sessions)
-│   │   └── job/route.ts               # REST API endpoint for job operations (CRUD requests)
+│   │   ├── db-check/route.ts          # REST API endpoint for job operations (CRUD requests)
+│   │   ├── login/route.ts             # Displays the user's completed job history
+│   │   └── profile/route..ts          # Displays the user's completed job history
 │   │
 │   ├── dashboard/
 │   │   ├── adminJobDetails/page.tsx   # Page for admin users to view/edit specific job details
 │   │   ├── availableJobs/page.tsx     # Lists all available volunteer jobs
 │   │   ├── jobHistory/page.tsx        # Displays the user's completed job history
 │   │   ├── ongoingJobs/page.tsx       # Shows current/active job assignments
-│   │   ├── profile/page.tsx           # Displays and edits volunteer profile information
+│   │   ├── profile/
+│   │   │   ├── EditProfileForm.tsx    # Client-side profile editing form
+│   │   │   └── page.tsx               # Profile page using EditProfileForm
 │   │   ├── layout.tsx                 # Protected layout wrapper for authenticated routes (GoodRun header)
 │   │   └── mapview.tsx                # Embedded map component for job visualization
 │   │
@@ -103,15 +107,19 @@ Team-17-Medical-Pantry/
 │   └── page.tsx                       # Public landing page (Medical Pantry home)
 │
 ├── components/                        # Reusable UI elements such as headers, buttons, and layout wrappers
-│   └── ui
-│   └── wrappers                       
+│   └── ui/...
+│   └── wrappers/...  
+|  
+├── hooks/
+│   └── useUserProfile.ts                            
 │
 ├── public/
 │   └── ...                            # Static assets (e.g., images, icons, fonts)
 │
 ├── lib/
-│   ├── auth.ts                        # NextAuth configuration and session options
-│   └── db.ts                          # Database connection setup (PostgreSQL)
+│   ├── db.ts  
+│   ├── services/...                   # Domain services for individual features
+│   └── utils/...                      # Generic helpers
 │
 ├── scripts/
 │   └── ...                            # Developer scripts and helper utilities
