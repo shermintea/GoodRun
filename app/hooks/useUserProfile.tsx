@@ -4,7 +4,7 @@
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      15-10-2025
 * Version:   1.0
-* Purpose:   
+* Purpose:   Fetches the user profile
 * Revisions:
 * v1.0 - Initial layout
 *******************************************************/

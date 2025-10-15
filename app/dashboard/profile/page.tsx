@@ -56,11 +56,16 @@ export default function ProfilePage() {
           name: updated.name,
           phone_no: updated.phone_no,
           birthday: updated.birthday,
-          icon: updated.icon,
+          // icon: updated.icon,
         }),
       });
       if (!res.ok) throw new Error("Failed to update profile");
       const saved = await res.json();
+
+      if (saved.icon && typeof saved.icon === "object") {
+        saved.icon = null; // fallback if something went wrong
+      }
+
       setProfile(saved);
     } catch (err: any) {
       console.error(err);
@@ -77,10 +82,12 @@ export default function ProfilePage() {
             <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
               <div className="h-24 w-24 md:h-28 md:w-28 rounded-full ring-4 ring-white overflow-hidden shadow-lg">
                 <Image
-                  src={profile.icon ?? "/default-avatar.png"}
+                  src="/default-avatar.png"
                   alt="Profile photo"
                   width={120}
-                  height={120} />
+                  height={120}
+                  className="rounded-full object-cover"
+                  priority />
               </div>
             </div>
 

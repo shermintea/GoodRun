@@ -13,6 +13,8 @@
 
 import { useState, useEffect } from "react";
 import type { Profile } from "@/types/profile";
+import Image from "next/image";
+
 
 export default function EditProfileForm({
     profile,
@@ -31,38 +33,33 @@ export default function EditProfileForm({
         setForm(profile);
     }, [profile]);
 
-    const set = <K extends keyof Profile>(key: K, value: Profile[K]) => {
+    const setField = <K extends keyof Profile>(key: K, value: Profile[K]) => {
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onloadend = () => {
-            // Strip off the `data:image/...;base64,` prefix
-            const base64 = (reader.result as string).split(",")[1];
-            setForm({ ...form, icon: base64 });
             setPreview(URL.createObjectURL(file));
         };
         reader.readAsDataURL(file);
-
-        // validate
-        if (file.size > 2 * 1024 * 1024) {
-            alert("File size must be under 2MB");
-            return;
-        }
-        if (!file.type.startsWith("image/")) {
-            alert("Only image files are allowed");
-            return;
-        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
+
+        // Ensure birthday is in YYYY-MM-DD format or null
+        const updated = {
+            ...form,
+            birthday: form.birthday ? new Date(form.birthday).toISOString().split("T")[0] : null,
+        };
+
         try {
-            await onSave(form);
+            await onSave(updated);
         } finally {
             setSaving(false);
         }
@@ -75,7 +72,7 @@ export default function EditProfileForm({
                     <span className="block text-neutral-600 mb-1">Name</span>
                     <input
                         value={form.name}
-                        onChange={(e) => set("name", e.target.value)}
+                        onChange={(e) => setField("name", e.target.value)}
                         className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
                     />
                 </label>
@@ -85,7 +82,7 @@ export default function EditProfileForm({
                     <input
                         type="date"
                         value={form.birthday || ""}
-                        onChange={(e) => set("birthday", e.target.value)}
+                        onChange={(e) => setField("birthday", e.target.value)}
                         className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
                     />
                 </label>
@@ -105,32 +102,10 @@ export default function EditProfileForm({
                     <span className="block text-neutral-600 mb-1">Phone</span>
                     <input
                         value={form.phone_no || ""}
-                        onChange={(e) => set("phone_no", e.target.value)}
+                        onChange={(e) => setField("phone_no", e.target.value)}
                         className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
                     />
                 </label>
-
-                <label className="text-sm md:col-span-2">
-                    <span className="block text-neutral-600 mb-1">Profile Picture</span>
-                    <label htmlFor="fileUpload" className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900">
-                        Choose file
-                        <input
-                            id="fileUpload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleFileChange}
-                        />
-                    </label>
-                </label>
-
-                {preview && (
-                    <img
-                        src={preview}
-                        alt="Profile Preview"
-                        className="w-24 h-24 object-cover rounded-full mt-2"
-                    />
-                )}
 
             </div>
 
