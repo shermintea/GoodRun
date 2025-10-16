@@ -16,6 +16,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import JobMapView from "./jobMapView";
 
 interface Job {
   id: number;
@@ -36,6 +37,10 @@ interface JobDetailProps {
 export default function JobDetail({ id }: JobDetailProps) {
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // temporarily default job location to Queen Vic Market
+  const jobLocation = {lat: -37.807594, lng: 144.956650};
+
 
   return (
     <main className="min-h-screen bg-gray-50 w-full">
@@ -79,8 +84,14 @@ export default function JobDetail({ id }: JobDetailProps) {
         </div>
 
         {/* Map placeholder */}
-        <div className="h-[400px] w-full rounded-lg border border-gray-200 bg-slate-100 flex items-center justify-center text-slate-600 mt-6">
-          Map Placeholder (insert GraphHopper integration)
+        <div className="mt-6">
+          {jobLocation ?(
+            <JobMapView jobLocation={jobLocation} />
+          ) : (
+          <div className="h-[400px] w-full rounded-lg border border-gray-200 bg-slate-100 flex items-center justify-center text-slate-600">
+            Job location unavailable.
+          </div>
+          )}
         </div>
 
         {/* Job Detail Form */}

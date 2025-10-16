@@ -24,7 +24,7 @@ export async function GET() {
 
   try {
     const result = await pool.query(
-      `SELECT id, name, email, phone, birthdate, pickups_finished, image
+      `SELECT id, name, email, phone_no, birthday, pickups_finished, image
        FROM users
        WHERE email = $1`,
       [session.user.email]
@@ -54,9 +54,9 @@ export async function PATCH(req: Request) {
 
     const result = await pool.query(
       `UPDATE users
-       SET name = $1, phone = $2, birthdate = $3, pickups_finished = $4, image = $5
+       SET name = $1, phone_no = $2, birthday = $3, pickups_finished = $4, image = $5
        WHERE email = $6
-       RETURNING id, name, email, phone, birthdate, pickups_finished, image`,
+       RETURNING id, name, email, phone_no, birthday, pickups_finished, image`,
       [name, phone, birthdate, pickups_finished, image, session.user.email]
     );
 

@@ -119,7 +119,7 @@ export default async function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* Map placeholder */}
+                    {/* Map*/}
                     <div className="md:col-span-2">
                         <div className="h-[400px] w-full rounded-lg border border-gray-200 overflow-hidden">
                             <MapView />
