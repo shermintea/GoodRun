@@ -15,7 +15,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Job {
   id: number;
@@ -91,7 +91,7 @@ export default function JobDetail({ id }: JobDetailProps) {
             </label>
             <input
               type="text"
-              value= "" // Background integration here
+              value="" // Background integration here
               readOnly
               className="w-full border rounded px-3 py-2 bg-gray-100"
             />
@@ -103,7 +103,7 @@ export default function JobDetail({ id }: JobDetailProps) {
             </label>
             <input
               type="text"
-              value= "" // Background integration here
+              value="" // Background integration here
               readOnly
               className="w-full border rounded px-3 py-2 bg-gray-100"
             />
@@ -115,7 +115,7 @@ export default function JobDetail({ id }: JobDetailProps) {
             </label>
             <input
               type="text"
-              value= "" // Background integration here
+              value="" // Background integration here
               readOnly
               className="w-full border rounded px-3 py-2 bg-gray-100"
             />
@@ -128,7 +128,7 @@ export default function JobDetail({ id }: JobDetailProps) {
               </label>
               <input
                 type="number"
-                value= "" // Background integration here
+                value="" // Background integration here
                 readOnly
                 className="w-full border rounded px-3 py-2 bg-gray-100"
               />
@@ -140,7 +140,7 @@ export default function JobDetail({ id }: JobDetailProps) {
               </label>
               <input
                 type="number"
-                value= "" // Background integration here
+                value="" // Background integration here
                 readOnly
                 className="w-full border rounded px-3 py-2 bg-gray-100"
               />
@@ -154,7 +154,7 @@ export default function JobDetail({ id }: JobDetailProps) {
               </label>
               <input
                 type="text"
-                value= "" // Background integration here
+                value="" // Background integration here
                 readOnly
                 className="w-full border rounded px-3 py-2 bg-gray-100"
               />
@@ -166,7 +166,7 @@ export default function JobDetail({ id }: JobDetailProps) {
               </label>
               <input
                 type="text"
-                value= "" // Background integration here
+                value="" // Background integration here
                 readOnly
                 className="w-full border rounded px-3 py-2 bg-gray-100"
               />
@@ -179,7 +179,7 @@ export default function JobDetail({ id }: JobDetailProps) {
             </label>
             <input
               type="text"
-              value= "" // Background integration here
+              value="" // Background integration here
               readOnly
               className="w-full border rounded px-3 py-2 bg-gray-100"
             />
