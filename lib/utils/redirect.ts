@@ -1,6 +1,6 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      lib/dashboardRedirect.ts
+* File:      lib/utils/redirect.ts
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      11-10-2025
 * Version:   1.0

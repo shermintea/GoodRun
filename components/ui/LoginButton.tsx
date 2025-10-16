@@ -14,7 +14,7 @@
 
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { getDashboardPath } from '@/lib/dashboardRedirect';
+import { getDashboardPath } from '@/lib/utils/redirect';
 
 export default function LoginButton() {
     const { data: session, status } = useSession();
