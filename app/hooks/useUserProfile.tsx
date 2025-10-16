@@ -36,6 +36,5 @@ export function useUserProfile() {
         refresh();
     }, []);
 
-
     return { profile, loading, error, refresh, setProfile }
 }

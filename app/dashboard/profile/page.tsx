@@ -28,10 +28,9 @@ import LogoutButton from "@/components/ui/LogoutButton";
 import EditProfileForm from "@/app/dashboard/profile/editProfileForm";
 import { useUserProfile } from "@/app/hooks/useUserProfile";
 import { Profile, SettingsState, SettingRowProps } from "@/types/profile";
-import { formatDate } from "@/lib/utils/format";
 
 export default function ProfilePage() {
-  const { profile, loading, error, setProfile, refresh } = useUserProfile();
+  const { profile, loading, error, setProfile } = useUserProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [settings, setSettings] = useState<SettingsState>({
     notif: true,
@@ -65,7 +64,6 @@ export default function ProfilePage() {
       if (saved.icon && typeof saved.icon === "object") {
         saved.icon = null; // fallback if something went wrong
       }
-
       setProfile(saved);
     } catch (err: any) {
       console.error(err);
@@ -80,7 +78,7 @@ export default function ProfilePage() {
           {/* Profile card */}
           <div className="relative rounded-2xl bg-[#11183A] text-white overflow-visible">
             <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
-              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full ring-4 ring-white overflow-hidden shadow-lg">
+              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full ring-4 ring-white shadow-lg">
                 <Image
                   src="/default-avatar.png"
                   alt="Profile photo"
@@ -98,7 +96,7 @@ export default function ProfilePage() {
 
               <div className="mt-6 space-y-4 text-sm md:text-base">
                 <InfoRow label="Name" value={profile.name} />
-                <InfoRow label="Birthday" value={formatDate(profile.birthday)} />
+                <InfoRow label="Birthday" value={profile.birthday || '-'} />
                 <InfoRow label="Email" value={profile.email} />
                 <InfoRow label="Phone" value={profile.phone_no || "—"} />
                 <InfoRow label="Total pickups finished" value={String(profile.pickups_finished ?? 0)} />

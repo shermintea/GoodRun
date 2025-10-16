@@ -12,7 +12,6 @@ export type Profile = {
     email: string;
     phone_no: string;
     birthday: string | null;
-    // icon: string | null;
     pickups_finished: number;
     role: string;
 };

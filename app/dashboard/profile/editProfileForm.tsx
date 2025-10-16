@@ -4,7 +4,7 @@
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      15-10-2025
 * Version:   1.0
-* Purpose:   
+* Purpose:   Interface for the edit profile panel
 * Revisions:
 * v1.0 - Initial implementation
 *******************************************************/
@@ -13,8 +13,6 @@
 
 import { useState, useEffect } from "react";
 import type { Profile } from "@/types/profile";
-import Image from "next/image";
-
 
 export default function EditProfileForm({
     profile,
@@ -27,39 +25,25 @@ export default function EditProfileForm({
 }) {
     const [form, setForm] = useState<Profile>(profile);
     const [saving, setSaving] = useState(false);
-    const [preview, setPreview] = useState<string | null>(null);
 
     useEffect(() => {
-        setForm(profile);
+        setForm({
+            ...profile,
+            birthday: profile.birthday || null
+        });
     }, [profile]);
 
     const setField = <K extends keyof Profile>(key: K, value: Profile[K]) => {
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setPreview(URL.createObjectURL(file));
-        };
-        reader.readAsDataURL(file);
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log("Submitting form:", form.birthday);
         setSaving(true);
 
-        // Ensure birthday is in YYYY-MM-DD format or null
-        const updated = {
-            ...form,
-            birthday: form.birthday ? new Date(form.birthday).toISOString().split("T")[0] : null,
-        };
-
         try {
-            await onSave(updated);
+            onSave(form);
         } finally {
             setSaving(false);
         }
