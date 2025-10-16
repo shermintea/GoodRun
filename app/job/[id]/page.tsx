@@ -10,7 +10,6 @@
 * v1.0 - Initial page wrapper for job details
 *******************************************************/
 
-"use client";
 
 import JobDetail from "./jobDetail";
 
@@ -19,6 +18,7 @@ interface JobDetailPageProps {
 }
 
 export default function JobDetailPage({ params }: JobDetailPageProps) {
+
   return (
     <main className="min-h-screen bg-gray-50 w-full">
       {/* Render JobDetail header full width */}

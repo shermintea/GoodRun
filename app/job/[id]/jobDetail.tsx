@@ -10,13 +10,18 @@
 *            the full width of the screen.
 * Revisions:
 * v1.0 - Initial implementation of job details page
+* v1.1 - Creation of map and markers for user location
+* v1.2 - Route between user location and hardcoded job location
 *******************************************************/
 
 "use client";
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import JobMapView from "./jobMapView";
+// import JobMapView from "./jobMapView";
+import dynamic from "next/dynamic";
+
+const JobMapView = dynamic(() => import("./jobMapView"), { ssr: false });
 
 interface Job {
   id: number;
