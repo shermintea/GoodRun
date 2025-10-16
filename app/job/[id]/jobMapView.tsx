@@ -34,6 +34,21 @@ interface JobMapViewProps {
   jobLocation: { lat: number; lng: number };
 }
 
+// create custom SVG markers
+
+const jobSvgIcon = L.divIcon({
+  html: `
+    <svg width="24" height="24" viewBox="0 0 24 24">
+      <polygon 
+        points="12,2 15,10 23,10 17,15 19,23 12,18 5,23 7,15 1,10 9,10" fill="#007498" stroke="white" stroke-width="1"/>
+    </svg>
+    `,
+  className: "",
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12], 
+})
+
 export default function JobMapView( {jobLocation}: JobMapViewProps) {
     const [userLocation, setUserLocation] = useState <{ lat: number; lng: number} | null>(null);
 
@@ -72,10 +87,10 @@ export default function JobMapView( {jobLocation}: JobMapViewProps) {
         />
         {userLocation && (
           <Marker position={userLocation}>
-            <Popup>Your Location</Popup>
+            <Popup>You are here !</Popup>
           </Marker>
         )}
-        <Marker position={jobLocation}>
+        <Marker position={jobLocation} icon={jobSvgIcon}>
           <Popup>Job Location</Popup>
         </Marker>
         {userLocation && <FitBounds />}
