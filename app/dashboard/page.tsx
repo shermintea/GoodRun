@@ -24,7 +24,7 @@
 //"use client";     dashboard is now server-side
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/utils/auth";
 import { redirect } from "next/navigation";
 import MapView from "./mapview";
 

@@ -17,7 +17,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { getDashboardPath } from "@/lib/dashboardRedirect";
+import { getDashboardPath } from "@/lib/utils/redirect";
 
 export default function Header() {
     const { data: session } = useSession();
