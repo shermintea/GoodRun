@@ -3,19 +3,58 @@
 * File:      app/dashboard/admin/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      16-10-2025
-* Version:   2.4
+* Version:   2.5
 * Purpose:   Admin dashboard layout (Figma-aligned)
-*            - Shared global header (Dashboard/Profile)
-*            - Removed Settings quick action
-*            - Profile button now links to /dashboard/profile
-*            - Added link to /dashboard/admin/create-user
+* Change:    Personalised greeting using session / users table
 *******************************************************/
 
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 
 export default function AdminDashboard() {
+  const { data: session, status } = useSession();
+  const [dbName, setDbName] = useState<string | null>(null);
+
+  // Quick best-effort name from session first
+  const sessionName =
+    (session?.user as any)?.name ||
+    (session?.user?.email
+      ? session.user.email.split("@")[0]
+      : null);
+
+  // If session has no name, try API lookup (must exist on your side)
+  useEffect(() => {
+    const needLookup = !sessionName && status === "authenticated";
+    if (!needLookup) return;
+
+    (async () => {
+      try {
+        const r = await fetch("/api/users/me", { cache: "no-store", credentials: "include" });
+        if (!r.ok) return;
+        const data = await r.json();
+        const name: string | null =
+          data?.user?.name ??
+          data?.name ??
+          null;
+        if (name) setDbName(name);
+      } catch {
+        // ignore; we'll keep the fallback
+      }
+    })();
+  }, [status, sessionName]);
+
+  const displayName = useMemo(() => {
+    const raw = dbName || sessionName;
+    if (!raw) return "there";
+    // Capitalise first letter nicely
+    const trimmed = String(raw).trim();
+    if (!trimmed) return "there";
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  }, [dbName, sessionName]);
+
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Main dashboard content */}
@@ -23,7 +62,7 @@ export default function AdminDashboard() {
         {/* Greeting + Create Request */}
         <div className="rounded-2xl bg-white border border-gray-200 p-6 shadow-sm">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Hi, Name!
+            Hi, {displayName}!
           </h1>
 
           {/* Primary CTA */}

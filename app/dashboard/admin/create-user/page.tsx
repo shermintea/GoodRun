@@ -6,10 +6,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Role = "admin" | "volunteer";
 
 export default function CreateUserPage() {
+  const router = useRouter();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("volunteer");
@@ -23,6 +26,7 @@ export default function CreateUserPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+
     setError(null);
     setSuccess(null);
 
@@ -36,17 +40,36 @@ export default function CreateUserPage() {
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ name, email, role, password }),
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "Failed to create user");
-        setSubmitting(false);
+      // Parse JSON defensively
+      let data: any = null;
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
+
+      if (!res.ok || data?.ok === false) {
+        const msg = data?.error || `Failed to create user (HTTP ${res.status})`;
+        setError(msg);
         return;
       }
 
-      setSuccess(`User created: ${data.user.email}`);
+      // ✅ Success
+      const newId: number | undefined = data?.id;
+      setSuccess(data?.message || `User created: ${name} <${email}>`);
+
+      // Optional: navigate to the new user's detail page
+      if (newId) {
+        router.push(`/dashboard/admin/manage-users/${newId}`);
+        return;
+      }
+
+      // Or clear form and stay here
       setName("");
       setEmail("");
       setRole("volunteer");
@@ -163,7 +186,7 @@ export default function CreateUserPage() {
               {submitting ? "Creating…" : "Create User"}
             </button>
             <Link
-              href="/dashboard/admin"
+              href="/dashboard/admin/manage-users"
               className="rounded-lg border px-5 py-2 font-semibold hover:bg-gray-50"
             >
               Cancel

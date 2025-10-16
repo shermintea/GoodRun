@@ -1,110 +1,118 @@
 /*******************************************************
-* File:      app/api/users/[id]/route.ts
-* Purpose:   Admin-only endpoint: update (PATCH) & delete (DELETE)
+* File: app/api/users/[id]/route.ts
+* Purpose: View / Update / Delete a single user (Postgres)
 *******************************************************/
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/utils/auth";
-import pool from "@/lib/db";
-import bcrypt from "bcryptjs";
-import { z } from "zod";
+import db from "@/lib/db";
 
-const UpdateUserSchema = z.object({
-  name: z.string().min(1).optional(),
-  role: z.enum(["admin", "volunteer"]).optional(),
-  // optional password change
-  password: z.string().min(3).optional(),
-});
+const notAuth  = () => NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+const forbidden= () => NextResponse.json({ error: "Forbidden" }, { status: 403 });
+const badId    = () => NextResponse.json({ error: "Invalid id" }, { status: 400 });
 
-async function assertAdmin() {
-  const session = await getServerSession(authOptions);
-  return !!session && (session.user as any)?.role === "admin";
+function pickRows(result: any): any[] {
+  if (!result) return [];
+  if (Array.isArray(result?.rows)) return result.rows;
+  if (Array.isArray(result)) return result;
+  return [];
+}
+function pickFirstRow(result: any): any | null {
+  const rows = pickRows(result);
+  return rows[0] ?? null;
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!(await assertAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const id = Number(params.id);
-  if (!Number.isInteger(id)) {
-    return NextResponse.json({ error: "Invalid user id" }, { status: 400 });
-  }
-
-  let body: unknown;
+// ---------- GET /api/users/:id ----------
+export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+    const { id: idStr } = await ctx.params;
+    const id = Number(idStr);
+    if (!Number.isFinite(id)) return badId();
 
-  const parsed = UpdateUserSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Validation failed", details: parsed.error.flatten() },
-      { status: 400 }
+    const raw = await (db as any).query(
+      `
+      SELECT id, name, email, role, phone_no, birthday
+      FROM users
+      WHERE id = $1
+      `,
+      [id]
     );
+
+    const user = pickFirstRow(raw);
+    if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ user });
+  } catch (e) {
+    console.error("GET /api/users/:id error:", e);
+    return NextResponse.json({ error: "Failed to load user" }, { status: 500 });
   }
+}
 
-  const { name, role, password } = parsed.data;
-
+// ---------- PATCH /api/users/:id ----------
+export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    // build dynamic update
-    const sets: string[] = [];
-    const values: any[] = [];
-    let idx = 1;
+    const session = await getServerSession(authOptions);
+    if (!session) return notAuth();
+    if ((session.user as any)?.role !== "admin") return forbidden();
 
-    if (name !== undefined) {
-      sets.push(`name = $${idx++}`);
-      values.push(name);
-    }
-    if (role !== undefined) {
-      sets.push(`role = $${idx++}`);
-      values.push(role);
-    }
-    if (password !== undefined) {
-      const password_hash = await bcrypt.hash(password, 10);
-      sets.push(`password_hash = $${idx++}`);
-      values.push(password_hash);
-    }
+    const { id: idStr } = await ctx.params;
+    const id = Number(idStr);
+    if (!Number.isFinite(id)) return badId();
+
+    const body = await req.json();
+    const { name, email, role, phone_no, birthday } = body || {};
+
+    // Build dynamic update
+    const sets: string[] = [];
+    const vals: any[] = [];
+    let n = 1;
+    const add = (frag: string, v: any) => { sets.push(`${frag} $${n++}`); vals.push(v); };
+
+    if (name !== undefined)      add("name =", name);
+    if (email !== undefined)     add("email =", email);
+    if (role !== undefined)      add("role =", role);
+    if (phone_no !== undefined)  add("phone_no =", phone_no || null);
+    if (birthday !== undefined)  add("birthday =", birthday || null);
 
     if (sets.length === 0) {
-      return NextResponse.json({ ok: true, updated: 0 }); // nothing to do
+      return NextResponse.json({ error: "No changes provided" }, { status: 400 });
     }
 
-    values.push(id);
-    const q = `UPDATE users SET ${sets.join(", ")}, updated_at = NOW() WHERE id = $${idx} RETURNING id, name, email, role, created_at, updated_at`;
-    const { rows } = await pool.query(q, values);
+    const sql = `UPDATE users SET ${sets.join(", ")} WHERE id = $${n}`;
+    vals.push(id);
+    await (db as any).query(sql, vals);
 
-    if (rows.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ ok: true, user: rows[0] });
-  } catch (err) {
-    console.error("[PATCH /api/users/:id] error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    console.error("PATCH /api/users/:id error:", e);
+    const msg = e?.code === "23505" ? "Email already exists" : "Failed to update user";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  if (!(await assertAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const id = Number(params.id);
-  if (!Number.isInteger(id)) {
-    return NextResponse.json({ error: "Invalid user id" }, { status: 400 });
-  }
-
+// ---------- DELETE /api/users/:id ----------
+export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const { rowCount } = await pool.query("DELETE FROM users WHERE id = $1", [id]);
-    if (!rowCount) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const session = await getServerSession(authOptions);
+    if (!session) return notAuth();
+    if ((session.user as any)?.role !== "admin") return forbidden();
+
+    const myId = Number((session.user as any)?.id);
+    const { id: idStr } = await ctx.params;
+    const id = Number(idStr);
+    if (!Number.isFinite(id)) return badId();
+    if (id === myId) {
+      return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 });
     }
+
+    const existRaw = await (db as any).query(`SELECT id FROM users WHERE id = $1`, [id]);
+    if (pickRows(existRaw).length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await (db as any).query(`DELETE FROM users WHERE id = $1`, [id]);
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("[DELETE /api/users/:id] error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (e) {
+    console.error("DELETE /api/users/:id error:", e);
+    return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });
   }
 }

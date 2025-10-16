@@ -3,21 +3,18 @@
 *File:      tsconfig.json
 *Author:    IT Project – Medical Pantry – Group 17
 *Date:      18-09-2025
-*Version:   1.0
+*Version:   1.2
 *Purpose:   TypeScript compiler configuration for the project.
 *           Defines compiler options, module resolution,
 *           path aliases, and included/excluded files.
 *Revisions:
 *v1.0 - 18-09-2025 - Initial configuration
+*v1.2 - 16-10-2025 - Add baseUrl
 *******************************************************/
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -30,24 +27,21 @@
     "jsx": "preserve",
     "incremental": true,
     "forceConsistentCasingInFileNames": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
+
+    /* 🔧 Key bits for your aliases */
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["*"],          // "@/lib/auth" -> "lib/auth"
+      "@lib/*": ["lib/*"]    // optional convenience alias
     }
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "types/**/*.ts"          // ✅ include your type augmentations (next-auth.d.ts)
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

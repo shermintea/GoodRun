@@ -1,58 +1,108 @@
-/*******************************************************
-* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      api/profile/route.ts
-* Author:    IT Project – Medical Pantry – Group 17
-* Date:      15-10-2025
-* Version:   3.0
-* Purpose:   Handles GET and PATCH for user profile.
-* Revisions:
-* v1.0 - 09-10-2025 - implemented PATCH /api/profile
-* v2.0 - 10-10-2025 - implemented profile updates in db
-* v3.0 - 15-10-2025 - modularized using services/profile.ts
-*******************************************************/
+ /*******************************************************
+ * File: app/api/profile/route.ts
+ * Purpose: Return and update the logged-in user's profile
+ * Notes: Includes total completed pickups from jobs table
+ *******************************************************/
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/utils/auth";
-import { getUserProfileByEmail, updateUserProfile } from "@/lib/services/profile";
+import db from "@/lib/db"; // <-- your Postgres client (e.g. pg or prisma)
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const user = await getUserProfileByEmail(session.user.email);
-    if (!user) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userEmail = (session.user as any)?.email;
+    if (!userEmail) {
+      return NextResponse.json({ error: "No email in session" }, { status: 400 });
+    }
+
+    // --- 1️⃣ Fetch user info ---
+    const userResult = await db.query(
+      `
+      SELECT id, name, email, role, phone_no, birthday
+      FROM users
+      WHERE email = $1
+      LIMIT 1;
+      `,
+      [userEmail]
+    );
+
+    if (userResult.rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    console.log("API received birthday:", user.birthday);
 
-    return NextResponse.json(user);
-  } catch (err) {
-    console.error("Profile fetch error:", err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+    const user = userResult.rows[0];
+
+    // --- 2️⃣ Count completed jobs ---
+    const completedResult = await db.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM jobs
+      WHERE assigned_to = $1
+      AND progress_stage = 'completed';
+      `,
+      [user.id]
+    );
+
+    const totalPickupsFinished = parseInt(completedResult.rows[0].total, 10) || 0;
+
+    // --- 3️⃣ Return combined profile ---
+    return NextResponse.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone_no: user.phone_no,
+      birthday: user.birthday,
+      pickups_finished: totalPickupsFinished,
+    });
+  } catch (err: any) {
+    console.error("GET /api/profile error:", err);
+    return NextResponse.json(
+      { error: "Failed to load profile", details: err.message },
+      { status: 500 }
+    );
   }
 }
 
+/* ---------- PATCH route for editing ---------- */
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const body = await req.json();
-    const updatedUser = await updateUserProfile(session.user.email, body);
-
-    if (!updatedUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json(updatedUser, { status: 200 });
-  } catch (err) {
-    console.error("Profile update error:", err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+    const userEmail = (session.user as any)?.email;
+    if (!userEmail) {
+      return NextResponse.json({ error: "No email in session" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const { name, phone_no, birthday } = body;
+
+    await db.query(
+      `
+      UPDATE users
+      SET name = $1,
+          phone_no = $2,
+          birthday = $3
+      WHERE email = $4;
+      `,
+      [name, phone_no, birthday || null, userEmail]
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("PATCH /api/profile error:", err);
+    return NextResponse.json(
+      { error: "Failed to update profile", details: err.message },
+      { status: 500 }
+    );
   }
 }

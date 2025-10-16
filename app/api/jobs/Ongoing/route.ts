@@ -1,49 +1,67 @@
+/*******************************************************
+* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+* File:      app/api/jobs/ongoing/route.ts
+* Purpose:   Provide list of ongoing jobs
+* Logic:
+*   - Admin: ONLY ('reserved','in_delivery')
+*   - Volunteer: ONLY their jobs in ('reserved','in_delivery')
+*******************************************************/
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import pool from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/utils/auth";
+import db from "@/lib/db";
 
-// Map DB stage -> UI action needed
-function toUiStatus(stage: string): "PICKUP" | "DROPOFF" {
-  if (stage === "reserved") return "PICKUP";
-  if (stage === "in_delivery") return "DROPOFF";
-  // anything else shouldn't be on "ongoing", but default safely:
-  return "PICKUP";
+const JOBS_TABLE = (process.env.JOBS_TABLE || "jobs").trim();
+
+function rows(result: any): any[] {
+  // normalise pg/mysql wrappers
+  if (!result) return [];
+  if (Array.isArray(result?.rows)) return result.rows;
+  if (Array.isArray(result)) return result;
+  return [];
 }
 
 export async function GET() {
-  const jar = await cookies();
-  const uid = jar.get("gr_uid")?.value;      // set at login
-  if (!uid) return NextResponse.json({ jobs: [] }, { status: 200 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // join org to get an address to show
-  const sql = `
-    SELECT
-      j.id,
-      j.progress_stage,
-      j.deadline_date,
-      j.organisation_id,
-      o.address AS org_address
-    FROM jobs j
-    LEFT JOIN organisation o ON o.id = j.organisation_id
-    WHERE j.assigned_to = $1
-      AND j.progress_stage IN ('reserved', 'in_delivery')
-    ORDER BY j.deadline_date NULLS LAST, j.id DESC;
-  `;
+    const role = (session.user as any)?.role as "admin" | "volunteer" | undefined;
+    const userId = (session.user as any)?.id;
 
-  const { rows } = await pool.query(sql, [uid]);
+    const allowed = ["reserved", "in_delivery"];
 
-  // shape for the page (you can extend when you add columns like lat/lng)
-  const out = rows.map((r) => ({
-    id: String(r.id),
-    name: `Job #${r.id}`,                 // until you add item_name
-    status: toUiStatus(r.progress_stage), // PICKUP/DROPOFF
-    address: r.org_address ?? "—",
-    pickupTime: r.deadline_date
-      ? new Date(r.deadline_date).toLocaleString()
-      : "TBA",
-    source: "stored" as const,            // it’s in DB
-    // lat/lng, urgency can be appended later when you add columns
-  }));
+    let sql = `
+      SELECT
+        j.id,
+        j.name,
+        j.address,
+        j.assigned_to,
+        j.follow_up,
+        j.deadline_date,
+        j.progress_stage,
+        j.intake_priority,
+        j.size
+      FROM ${JOBS_TABLE} j
+      WHERE j.progress_stage IN ($1, $2)
+    `;
+    const params: any[] = allowed;
 
-  return NextResponse.json({ jobs: out });
+    if (role !== "admin") {
+      // volunteers only see THEIR ongoing jobs
+      sql += ` AND j.assigned_to = $3`;
+      params.push(userId);
+    }
+
+    sql += ` ORDER BY 
+       CASE j.progress_stage WHEN 'in_delivery' THEN 0 ELSE 1 END,
+       COALESCE(j.deadline_date, '9999-12-31') ASC,
+       j.id DESC`;
+
+    const result = await db.query(sql, params);
+    return NextResponse.json({ jobs: rows(result) });
+  } catch (err) {
+    console.error("Error fetching ongoing jobs:", err);
+    return NextResponse.json({ error: "Failed to load ongoing jobs" }, { status: 500 });
+  }
 }
