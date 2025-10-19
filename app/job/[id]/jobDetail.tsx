@@ -18,10 +18,10 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import JobMapView from "./jobMapView";
-// import dynamic from "next/dynamic";
+//import JobMapView from "./jobMapView";
+import dynamic from "next/dynamic";
 
-// const JobMapView = dynamic(() => import("./jobMapView"), { ssr: false });
+const JobMapView = dynamic(() => import("./jobMapView"), { ssr: false });
 
 interface Job {
   id: number;
