@@ -23,6 +23,18 @@ import { Profile } from "@/types/profile";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
+/** Coerce anything → "YYYY-MM-DD" or "" (for display) */
+function toDateOnly(value: unknown): string {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = new Date(value as any);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export default function ProfilePage() {
   const { profile, loading, error, setProfile } = useUserProfile();
   const [isEditing, setIsEditing] = useState(false);
@@ -40,13 +52,16 @@ export default function ProfilePage() {
 
   const handleSave = async (updated: Profile) => {
     try {
+      // Always send a date-only string (or null) to the API
+      const safeBirthday = toDateOnly((updated as any).birthday) || null;
+
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: updated.name,
           phone_no: updated.phone_no,
-          birthday: updated.birthday,
+          birthday: safeBirthday,
         }),
         credentials: "include",
       });
@@ -57,6 +72,9 @@ export default function ProfilePage() {
       }
 
       const saved: Profile = await res.json();
+
+      // Normalize birthday from API (may be ISO with time)
+      (saved as any).birthday = toDateOnly((saved as any).birthday) || null;
 
       // In case API returns nested icon obj (not used in this card)
       if ((saved as any).icon && typeof (saved as any).icon === "object") {
@@ -70,7 +88,7 @@ export default function ProfilePage() {
       await update?.({
         name: saved.name,
         phone_no: saved.phone_no,
-        birthday: saved.birthday,
+        birthday: saved.birthday as any,
       });
 
       // 3) If any Server Components on this route fetch profile, revalidate them
@@ -107,13 +125,16 @@ export default function ProfilePage() {
           </h1>
 
           <div className="space-y-4 text-sm md:text-base text-left">
-            <InfoRow label="Name" value={profile.name} />
-            <InfoRow label="Birthday" value={profile.birthday || "-"} />
-            <InfoRow label="Email" value={profile.email} />
+            <InfoRow label="Name" value={profile.name || "—"} />
+            <InfoRow
+              label="Birthday"
+              value={toDateOnly((profile as any).birthday) || "—"}
+            />
+            <InfoRow label="Email" value={profile.email || "—"} />
             <InfoRow label="Phone" value={profile.phone_no || "—"} />
             <InfoRow
               label="Total pickups finished"
-              value={String(profile.pickups_finished ?? 0)}
+              value={String((profile as any).pickups_finished ?? 0)}
             />
           </div>
 
@@ -137,7 +158,11 @@ export default function ProfilePage() {
             EDIT PROFILE
           </div>
           <EditProfileForm
-            profile={profile}
+            // Ensure the form always sees YYYY-MM-DD (or null)
+            profile={{
+              ...profile,
+              birthday: (toDateOnly((profile as any).birthday) as any) || null,
+            } as Profile}
             onSave={handleSave}
             onCancel={() => setIsEditing(false)}
           />
