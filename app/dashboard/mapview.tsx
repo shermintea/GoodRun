@@ -10,11 +10,15 @@
 * Revisions:
 * v1.0 - Initial implementation of Leaflet map and tracking
 *        user location
+* v1.2 - Added geocoding API functionality
+* v1.3 - Extended API functionality to be more flexible and allow code
+*        to be modified based on where it is called. Changed default to 
+*        Medical Pantry's warehouse.
 *******************************************************/
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -27,40 +31,45 @@ L.Icon.Default.mergeOptions({
 
 type Coordinates = [number, number];
 
-export default function MapView() {
+interface MapViewProps {
+    addresses?: string[];            // destination addresses
+    showUserLocation?: boolean;      // whether to show user's location
+    fallbackCenter?: Coordinates;    // default center if no data
+    zoom?: number;                   // default zoom
+}
+
+type Destination = {
+    coords: Coordinates;
+    label: string;
+};
+
+export default function MapView({
+    addresses = [],
+    showUserLocation = true,
+    fallbackCenter = [-37.7963, 144.9614], // default center
+    zoom = 12,
+}: MapViewProps) {
     const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
-    const [destinations, setDestinations] = useState<Coordinates[]>([]);
+    const [destinations, setDestinations] = useState<Destination[]>([]);
 
-    // User's current position
+    // Fetch user's location if requested
     useEffect(() => {
-        if ("geolocation" in navigator){
+        if (showUserLocation && "geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const {latitude, longitude} = pos.coords;
-                    setUserLocation([latitude, longitude]);
-                },
-                (err) => {
-                    console.error("Geolocation error: ", err);
-                }
+                (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+                (err) => console.error("Geolocation error:", err)
             );
-        } else {
-            console.warn("Geolocation not supported by this browser.");
         }
-    }, []);
+    }, [showUserLocation]);
 
-    // Fetch destination coordinates from API
+    // Fetch coordinates for addresses
     useEffect(() => {
         async function fetchCoordinates(address: string): Promise<Coordinates | null> {
             try {
                 const res = await fetch(`/api/geocoding?address=${encodeURIComponent(address)}`);
-                if (!res.ok) {
-                    console.warn(`Failed to fetch coordinates for "${address}"`);
-                    return null;
-                }
+                if (!res.ok) return null;
                 const data = await res.json();
-                if (data.latitude && data.longitude) {
-                    return [data.latitude, data.longitude] as Coordinates;
-                }
+                if (data.latitude && data.longitude) return [data.latitude, data.longitude];
                 return null;
             } catch (err) {
                 console.error(`Error fetching coordinates for "${address}":`, err);
@@ -68,50 +77,63 @@ export default function MapView() {
             }
         }
 
-        // Function to load the addresses from DB, will need to edit (currently hardcoded)
         async function loadDestinations() {
-            const addresses = [
-                "University of Melbourne, Parkville VIC",
-                "495 Rathdowne Street, Carlton, VIC",
-                "Unit 9/47-51 Little Boundary Road Laverton North", // Medical Pantry Warehouse Address
-            ];
-
-            const coords: Coordinates[] = [];
-
+            const coords: Destination[] = [];
             for (const addr of addresses) {
                 const result = await fetchCoordinates(addr);
-                if (result) coords.push(result);
+                if (result) coords.push({ coords: result, label: addr });
             }
-
             setDestinations(coords);
         }
 
-        loadDestinations();
-    }, []);
+        if (addresses.length > 0) {
+            loadDestinations();
+        } else {
+            setDestinations([]);
+        }
+    }, [addresses]);
+
+    // Auto-fit map bounds component
+    function FitBounds({ points }: { points: Coordinates[] }) {
+        const map = useMap();
+        useEffect(() => {
+            if (points.length === 0) return;
+            const bounds = L.latLngBounds(points.map(([lat, lng]) => [lat, lng]));
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }, [points, map]);
+        return null;
+    }
+
+    // Combine user location + destinations for bounds
+    const allPoints: Coordinates[] = [
+        ...(showUserLocation && userLocation ? [userLocation] : []),
+        ...destinations.map((d) => d.coords),
+    ];
+
+    // Default center if no points yet
+    const initialCenter = allPoints[0] || fallbackCenter;
+    const initialZoom = zoom;
 
     return (
-        <MapContainer
-            center={userLocation || [-37.7963, 144.9614]} // fallback to UniMelb
-            zoom={userLocation ? 15 : 12}
-            style={{height: "400px", width: "100%"}}
-        >
+        <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: "400px", width: "100%" }}>
             <TileLayer
                 attribution='&copy;<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {userLocation && (
+            {showUserLocation && userLocation && (
                 <Marker position={userLocation}>
                     <Popup>📍 You are here</Popup>
                 </Marker>
             )}
 
-            {destinations.map((pos, i) => (
-                <Marker key={i} position={pos}>
-                    <Popup>Destination {i + 1}</Popup>
+            {destinations.map((dest, i) => (
+                <Marker key={i} position={dest.coords}>
+                    <Popup>📌 {dest.label}</Popup>
                 </Marker>
             ))}
+
+            {allPoints.length > 0 && <FitBounds points={allPoints} />}
         </MapContainer>
     );
 }
-

@@ -4,12 +4,17 @@
 * Purpose:   Show job details; admins can edit, volunteers read-only
 * Note:      Includes a MAP PLACEHOLDER box (for GraphHopper) placed
 *            ABOVE the organisation info card.
+* Revisions:
+* v1.0 - Initial implementation
+* v1.1 - Added Map functionality with pull from DB, and translating address
+*        to the geocoded coordinates
 *******************************************************/
 
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import MapView from "@/app/dashboard/mapview";
 
 type Job = {
   id: number;
@@ -208,6 +213,12 @@ export default function JobDetail({ id }: { id: string }) {
       </div>
 
       {/* NEW: Map Placeholder (GraphHopper will be embedded here) */}
+      <MapView
+        addresses={[form.address]}
+        showUserLocation={false}
+      />
+      
+      {/*
       <div
         aria-label="Map placeholder"
         className="rounded-lg border-2 border-dashed border-gray-300 bg-white h-[320px] flex items-center justify-center"
@@ -221,7 +232,7 @@ export default function JobDetail({ id }: { id: string }) {
             (ETA, routing and turn-by-turn can be added during integration)
           </div>
         </div>
-      </div>
+      </div>*/}
 
       {/* Organisation quick info */}
       <div className="rounded-lg bg-white p-4 border shadow-sm">
