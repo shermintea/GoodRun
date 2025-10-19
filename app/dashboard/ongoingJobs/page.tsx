@@ -3,17 +3,20 @@
 * File:      app/dashboard/ongoingJobs/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      25-09-2025
-* Version:   3.1
+* Version:   3.2
 * Purpose:   - Display currently accepted jobs
 *            - Confirm Pickup / Drop-off transitions for volunteers
 *            - Manual refresh, role-aware UI, safe feedback messages
+*            - Distance-based filter/sort (GPS) + optional priority sort
 ******************************************************************************************/
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+
+type Priority = "low" | "medium" | "high";
 
 type JobRow = {
   id: number;
@@ -23,8 +26,12 @@ type JobRow = {
   follow_up: boolean;
   deadline_date: string;
   progress_stage: string;
-  intake_priority: string;
+  intake_priority: Priority | string;
   size?: string | null;
+
+  // OPTIONAL coords; included to enable distance filter/sort when backend provides them
+  lat?: number | null;
+  lng?: number | null;
 };
 
 function fmtDate(d: string | null | undefined) {
@@ -44,6 +51,82 @@ export default function OngoingJobsPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
+  // ---------- New: filter/sort state ----------
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState<number>(10);
+  const [applyRadius, setApplyRadius] = useState<boolean>(true);
+  const [sortOrder, setSortOrder] = useState<"nearest" | "farthest">("nearest");
+  const [prioritySort, setPrioritySort] = useState<"none" | "highFirst" | "lowFirst">("none");
+
+  // Auto-use geolocation if permission is already granted
+  useEffect(() => {
+    const tryAutoGeo = async () => {
+      try {
+        const status = await (navigator as any)?.permissions?.query?.({ name: "geolocation" as any });
+        if (status?.state === "granted") {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => {}
+          );
+        }
+      } catch {
+        // ignore if Permissions API not supported
+      }
+    };
+    tryAutoGeo();
+  }, []);
+
+  // Distance helpers
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const R = 6371;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
+  const priorityRank = (p: Priority | string) => (String(p).toLowerCase() === "high" ? 3 : String(p).toLowerCase() === "medium" ? 2 : 1);
+
+  // ---------- Compute filtered/sorted list ----------
+  const displayed = useMemo(() => {
+    let list = jobs.map((j) => {
+      const has = typeof j.lat === "number" && typeof j.lng === "number";
+      const distanceKm = userLoc && has ? haversineKm(userLoc, { lat: j.lat!, lng: j.lng! }) : null;
+      return { ...j, distanceKm };
+    });
+
+    // Limit to radius (optional). Unknown-distance stays visible.
+    if (userLoc && applyRadius) {
+      list = list.filter((j: any) => (j.distanceKm == null ? true : j.distanceKm <= radiusKm));
+    }
+
+    // Sort by priority (optional)
+    if (prioritySort !== "none") {
+      list.sort((a, b) => {
+        const diff = priorityRank(b.intake_priority) - priorityRank(a.intake_priority); // high -> low
+        return prioritySort === "highFirst" ? diff : -diff; // low -> high
+      });
+    }
+
+    // Sort by distance: known first; then nearest/farthest
+    if (userLoc) {
+      list.sort((a: any, b: any) => {
+        const da = a.distanceKm,
+          db = b.distanceKm;
+        const aKnown = da != null,
+          bKnown = db != null;
+        if (aKnown && !bKnown) return -1;
+        if (!aKnown && bKnown) return 1;
+        if (!aKnown && !bKnown) return 0;
+        return sortOrder === "nearest" ? da! - db! : db! - da!;
+      });
+    }
+
+    return list;
+  }, [jobs, userLoc, radiusKm, applyRadius, sortOrder, prioritySort]);
+
   // Load all ongoing jobs
   const load = async () => {
     setRefreshing(true);
@@ -56,7 +139,8 @@ export default function OngoingJobsPage() {
         setError(data?.error || "Failed to load jobs");
         setJobs([]);
       } else {
-        setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+        // Expecting: [{...job, lat?, lng?}] – coords optional until backend provides them
+        setJobs(Array.isArray(data.jobs) ? (data.jobs as JobRow[]) : []);
       }
     } catch {
       setError("Network error while loading jobs");
@@ -90,7 +174,6 @@ export default function OngoingJobsPage() {
             ? "✅ Pick-up confirmed! Job now in delivery."
             : "✅ Drop-off confirmed! Job marked as completed."
         );
-        // reload jobs to refresh UI
         await load();
       }
     } catch {
@@ -135,6 +218,73 @@ export default function OngoingJobsPage() {
           </button>
         </div>
 
+        {/* -------- Controls: distance + sort -------- */}
+        <div className="rounded-xl bg-white p-4 shadow-sm">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* Distance */}
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-medium text-gray-500 mb-2">Distance (km)</div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={1}
+                  max={50}
+                  step={1}
+                  value={radiusKm}
+                  onChange={(e) => setRadiusKm(Number(e.target.value))}
+                  className="w-full accent-red-600"
+                />
+                <span className="text-sm w-8 text-right">{radiusKm}</span>
+              </div>
+              {!userLoc && (
+                <p className="mt-2 text-xs text-gray-500">Tip: allow location in browser to enable distance sorting.</p>
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  id="limit-radius"
+                  type="checkbox"
+                  checked={applyRadius}
+                  onChange={(e) => setApplyRadius(e.target.checked)}
+                  disabled={!userLoc}
+                />
+                <label htmlFor="limit-radius" className={`text-sm ${!userLoc ? "text-gray-400" : ""}`}>
+                  Limit to radius
+                </label>
+              </div>
+            </div>
+
+            {/* Sort by distance */}
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-medium text-gray-500 mb-2">Sort by distance</div>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as "nearest" | "farthest")}
+                className="w-full rounded-md border px-3 py-2 text-sm"
+                disabled={!userLoc}
+                title={!userLoc ? "Enable location to sort by distance" : "Sort by distance"}
+              >
+                <option value="nearest">Nearest first</option>
+                <option value="farthest">Farthest first</option>
+              </select>
+            </div>
+
+            {/* Sort by priority (optional) */}
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-medium text-gray-500 mb-2">Sort by priority</div>
+              <select
+                value={prioritySort}
+                onChange={(e) => setPrioritySort(e.target.value as any)}
+                className="w-full rounded-md border px-3 py-2 text-sm"
+                aria-label="Sort by priority"
+              >
+                <option value="none">None</option>
+                <option value="highFirst">Highest first</option>
+                <option value="lowFirst">Lowest first</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {actionMsg && (
           <div className="rounded-lg border px-4 py-2 bg-white">{actionMsg}</div>
         )}
@@ -149,23 +299,31 @@ export default function OngoingJobsPage() {
             {error}
           </p>
         )}
-        {!loading && !sessionLoading && !error && jobs.length === 0 && (
+        {!loading && !sessionLoading && !error && displayed.length === 0 && (
           <div className="rounded-xl bg-[#121a38] p-6 text-center text-gray-200">
             No accepted jobs yet. When an admin assigns you a job / you reserve a job, it will appear here.
           </div>
         )}
 
-        {!loading && !sessionLoading && !error && jobs.length > 0 && (
+        {!loading && !sessionLoading && !error && displayed.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {jobs.map((j) => (
+            {displayed.map((j: any) => (
               <div key={j.id} className="rounded-lg bg-white p-5 shadow-sm border border-gray-200">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="font-semibold text-[#171e3a]">
                     {j.name ?? `Job #${j.id}`}
                   </h2>
-                  <span className="text-xs rounded-full px-3 py-1 bg-amber-100 text-amber-800">
-                    {j.progress_stage}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* Optional distance chip */}
+                    {j.distanceKm != null && userLoc && (
+                      <span className="text-xs rounded-full px-2 py-1 bg-sky-100 text-sky-700">
+                        {j.distanceKm.toFixed(1)} km
+                      </span>
+                    )}
+                    <span className="text-xs rounded-full px-3 py-1 bg-amber-100 text-amber-800">
+                      {j.progress_stage}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Role-specific fields */}
@@ -175,12 +333,12 @@ export default function OngoingJobsPage() {
                     <p><span className="font-medium">Follow-up required:</span> {j.follow_up ? "Yes" : "No"}</p>
                     <p><span className="font-medium">Deadline:</span> {fmtDate(j.deadline_date)}</p>
                     <p><span className="font-medium">Status:</span> {j.progress_stage}</p>
-                    <p><span className="font-medium">Priority:</span> {j.intake_priority}</p>
+                    <p><span className="font-medium">Priority:</span> {String(j.intake_priority).toLowerCase()}</p>
                   </div>
                 ) : (
                   <div className="mt-3 text-sm text-gray-700 space-y-1">
                     <p><span className="font-medium">Deadline:</span> {fmtDate(j.deadline_date)}</p>
-                    <p><span className="font-medium">Priority:</span> {j.intake_priority}</p>
+                    <p><span className="font-medium">Priority:</span> {String(j.intake_priority).toLowerCase()}</p>
                     <p><span className="font-medium">Status:</span> {j.progress_stage}</p>
                     <p><span className="font-medium">Address:</span> {j.address ?? "—"}</p>
                   </div>

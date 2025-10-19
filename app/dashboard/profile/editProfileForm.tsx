@@ -3,10 +3,11 @@
 * File:      app/dashboard/profile/editProfileForm.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      15-10-2025
-* Version:   1.0
+* Version:   1.1
 * Purpose:   Interface for the edit profile panel
 * Revisions:
 * v1.0 - Initial implementation
+* v1.1 - Await onSave; minor UX tweaks while saving
 *******************************************************/
 
 "use client";
@@ -15,100 +16,102 @@ import { useState, useEffect } from "react";
 import type { Profile } from "@/types/profile";
 
 export default function EditProfileForm({
-    profile,
-    onSave,
-    onCancel,
+  profile,
+  onSave,
+  onCancel,
 }: {
-    profile: Profile;
-    onSave: (updated: Profile) => void;
-    onCancel: () => void;
+  profile: Profile;
+  onSave: (updated: Profile) => Promise<void> | void;
+  onCancel: () => void;
 }) {
-    const [form, setForm] = useState<Profile>(profile);
-    const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<Profile>(profile);
+  const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        setForm({
-            ...profile,
-            birthday: profile.birthday || null
-        });
-    }, [profile]);
+  useEffect(() => {
+    setForm({
+      ...profile,
+      birthday: profile.birthday || null,
+    });
+  }, [profile]);
 
-    const setField = <K extends keyof Profile>(key: K, value: Profile[K]) => {
-        setForm((prev) => ({ ...prev, [key]: value }));
-    };
+  const setField = <K extends keyof Profile>(key: K, value: Profile[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        console.log("Submitting form:", form.birthday);
-        setSaving(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      // Await the parent save so UI reflects new data immediately after
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-        try {
-            onSave(form);
-        } finally {
-            setSaving(false);
-        }
-    };
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="text-sm">
+          <span className="block text-neutral-600 mb-1">Name</span>
+          <input
+            value={form.name}
+            onChange={(e) => setField("name", e.target.value)}
+            disabled={saving}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:opacity-60"
+          />
+        </label>
 
-    return (
-        <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="text-sm">
-                    <span className="block text-neutral-600 mb-1">Name</span>
-                    <input
-                        value={form.name}
-                        onChange={(e) => setField("name", e.target.value)}
-                        className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                    />
-                </label>
+        <label className="text-sm">
+          <span className="block text-neutral-600 mb-1">Birthdate</span>
+          <input
+            type="date"
+            value={form.birthday || ""}
+            onChange={(e) => setField("birthday", e.target.value)}
+            disabled={saving}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:opacity-60"
+          />
+        </label>
 
-                <label className="text-sm">
-                    <span className="block text-neutral-600 mb-1">Birthdate</span>
-                    <input
-                        type="date"
-                        value={form.birthday || ""}
-                        onChange={(e) => setField("birthday", e.target.value)}
-                        className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                    />
-                </label>
+        <label className="text-sm md:col-span-2">
+          <span className="block text-neutral-600 mb-1">Email</span>
+          <input
+            type="email"
+            value={form.email}
+            disabled
+            title="Email changes are disabled"
+            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-500"
+          />
+        </label>
 
-                <label className="text-sm md:col-span-2">
-                    <span className="block text-neutral-600 mb-1">Email</span>
-                    <input
-                        type="email"
-                        value={form.email}
-                        disabled
-                        title="Email changes are disabled"
-                        className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-500"
-                    />
-                </label>
+        <label className="text-sm md:col-span-2">
+          <span className="block text-neutral-600 mb-1">Phone</span>
+          <input
+            value={form.phone_no || ""}
+            onChange={(e) => setField("phone_no", e.target.value)}
+            disabled={saving}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:opacity-60"
+          />
+        </label>
+      </div>
 
-                <label className="text-sm md:col-span-2">
-                    <span className="block text-neutral-600 mb-1">Phone</span>
-                    <input
-                        value={form.phone_no || ""}
-                        onChange={(e) => setField("phone_no", e.target.value)}
-                        className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                    />
-                </label>
-
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-60"
-                >
-                    {saving ? "Saving…" : "Save changes"}
-                </button>
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50"
-                >
-                    Cancel
-                </button>
-            </div>
-        </form>
-    );
+      <div className="flex items-center gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-60"
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-60"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
 }

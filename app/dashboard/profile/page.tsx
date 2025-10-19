@@ -1,12 +1,15 @@
 /*******************************************************
 * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
-* File:      dashboard/profile/page.tsx
+* File:      app/dashboard/profile/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      17-10-2025
-* Version:   3.3
+* Version:   3.4
 * Purpose:   Centered Profile Page
 *            - Profile card centered on screen
 *            - Logout button below card
+* Revisions:
+* v3.4 - Close editor after successful save; update local state,
+*        refresh NextAuth session (optional) and router.refresh()
 *******************************************************/
 
 "use client";
@@ -17,10 +20,14 @@ import LogoutButton from "@/components/ui/LogoutButton";
 import EditProfileForm from "@/app/dashboard/profile/editProfileForm";
 import { useUserProfile } from "@/app/hooks/useUserProfile";
 import { Profile } from "@/types/profile";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function ProfilePage() {
   const { profile, loading, error, setProfile } = useUserProfile();
   const [isEditing, setIsEditing] = useState(false);
+  const router = useRouter();
+  const { update } = useSession(); // next-auth (optional)
 
   if (loading)
     return <p className="py-24 text-center text-neutral-500">Loading profile…</p>;
@@ -32,7 +39,6 @@ export default function ProfilePage() {
     );
 
   const handleSave = async (updated: Profile) => {
-    setIsEditing(false);
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
@@ -42,14 +48,39 @@ export default function ProfilePage() {
           phone_no: updated.phone_no,
           birthday: updated.birthday,
         }),
+        credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to update profile");
-      const saved = await res.json();
-      if (saved.icon && typeof saved.icon === "object") saved.icon = null;
+
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || "Failed to update profile");
+      }
+
+      const saved: Profile = await res.json();
+
+      // In case API returns nested icon obj (not used in this card)
+      if ((saved as any).icon && typeof (saved as any).icon === "object") {
+        (saved as any).icon = null;
+      }
+
+      // 1) Update local state so the card re-renders immediately
       setProfile(saved);
+
+      // 2) If other parts of the UI read from session.user, push updates there too
+      await update?.({
+        name: saved.name,
+        phone_no: saved.phone_no,
+        birthday: saved.birthday,
+      });
+
+      // 3) If any Server Components on this route fetch profile, revalidate them
+      router.refresh();
+
+      // Close editor only after everything succeeded
+      setIsEditing(false);
     } catch (err: any) {
       console.error(err);
-      alert("Error saving profile: " + err.message);
+      alert("Error saving profile: " + (err?.message ?? "Unknown error"));
     }
   };
 
