@@ -85,18 +85,7 @@ export default function JobMapView( {jobLocation}: JobMapViewProps) {
         }
     }, []);
 
-    /* // Bound map around markers
-    const FitBounds = () => {
-        const map = useMap();
-        useEffect(() => {
-            if (userLocation) {
-                const bounds = L.latLngBounds([userLocation, jobLocation]);
-                map.fitBounds(bounds, {padding: [50, 50]});
-            }
-        }, [map, userLocation]);
-        return null;
-    };
- */
+    
     useEffect(() => {
       const fetchRoute = async () => {
         if (!userLocation) return;
