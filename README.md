@@ -33,6 +33,7 @@ NODE_ENV=development
 NEXTAUTH_SECRET=[generate your own key]     // Command to generate: openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
 GEOCODING_KEY=[external API key from LocationIQ]        // Sign up for a LocationIQ account and add API key here
+NEXT_PUBLIC_GRAPHHOPPER_KEY=b28dcd9c-bb05-4e50-ac4d-0c3cb5804e25
 ```
 
 2. **Database Management**
