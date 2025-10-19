@@ -9,7 +9,7 @@
 *
 *******************************************************/
 
-// npm install node-geocoderexport const runtime = "edge"; // or omit, Edge works fine
+// npm install node-geocode
 
 import { NextResponse } from "next/server";
 

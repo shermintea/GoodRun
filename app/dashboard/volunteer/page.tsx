@@ -122,7 +122,8 @@ export default async function DashboardPage() {
           {/* Map placeholder */}
           <div className="md:col-span-2">
             <div className="h-[400px] w-full rounded-lg border border-gray-200 overflow-hidden">
-              <MapView />
+              <MapView showUserLocation={true}/>
+              
             </div>
           </div>
         </div>
