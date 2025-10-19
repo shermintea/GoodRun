@@ -1,84 +1,115 @@
 /*******************************************************
+* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
 * File:      app/api/users/route.ts
-* Purpose:   Admin-only endpoint: list users (GET) & create user (POST)
+* Purpose:   List + Create users (Postgres)
 *******************************************************/
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/utils/auth";
-import pool from "@/lib/db";
+import db from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { z } from "zod";
 
-const CreateUserSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email"),
-  role: z.enum(["admin", "volunteer"]),
-  password: z.string().min(3, "Password must be at least 3 chars"),
-});
-
-async function assertAdmin() {
-  const session = await getServerSession(authOptions);
-  return !!session && (session.user as any)?.role === "admin";
+/** Normalize db.query(...) for different wrappers */
+function pickRows(result: any): any[] {
+  if (!result) return [];
+  if (Array.isArray(result?.rows)) return result.rows;
+  if (Array.isArray(result)) return result;
+  return [];
+}
+function pickFirstRow(result: any): any | null {
+  const r = pickRows(result);
+  return r[0] ?? null;
 }
 
-export async function GET() {
-  if (!(await assertAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+/* ==========================================================
+   GET /api/users?q=...
+   ========================================================== */
+export async function GET(req: Request) {
   try {
-    const { rows } = await pool.query(
-      `SELECT id, name, email, role, created_at
-         FROM users
-         ORDER BY created_at DESC
-         LIMIT 500`
+    const { searchParams } = new URL(req.url);
+    const q = (searchParams.get("q") || "").trim();
+
+    const where = q
+      ? `WHERE u.name ILIKE $1 OR u.email ILIKE $1 OR u.role ILIKE $1`
+      : "";
+    const params = q ? [`%${q}%`] : [];
+
+    const raw = await (db as any).query(
+      `
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        u.created_at AS "createdAt",
+        c.name       AS "createdByName",
+        c.email      AS "createdByEmail"
+      FROM users u
+      LEFT JOIN users c ON c.id = u.created_by
+      ${where}
+      ORDER BY u.created_at DESC, u.name ASC
+      `,
+      params
     );
-    return NextResponse.json({ ok: true, users: rows });
-  } catch (err) {
-    console.error("[GET /api/users] error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+
+    const list = pickRows(raw);
+    return NextResponse.json({ users: list });
+  } catch (e) {
+    console.error("GET /api/users error:", e);
+    return NextResponse.json({ error: "Failed to load users" }, { status: 500 });
   }
 }
 
-export async function POST(req: NextRequest) {
-  if (!(await assertAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  let body: unknown;
+/* ==========================================================
+   POST /api/users  → Admin only
+   ========================================================== */
+export async function POST(req: Request) {
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const parsed = CreateUserSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Validation failed", details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
-
-  const { name, email, role, password } = parsed.data;
-
-  try {
-    const exists = await pool.query("SELECT 1 FROM users WHERE email = $1", [email]);
-    if (exists.rowCount && exists.rowCount > 0) {
-      return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const password_hash = await bcrypt.hash(password, 10);
+    const creator = session.user as any;
+    if (creator?.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    const { rows } = await pool.query(
-      `INSERT INTO users (name, email, role, password_hash)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role, created_at`,
-      [name, email, role, password_hash]
+    const body = await req.json();
+    const { name, email, role, password, phone_no, birthday } = body || {};
+
+    if (!name || !email || !role || !password) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+    if (!["admin", "volunteer"].includes(role)) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+
+    const password_hash = await bcrypt.hash(String(password), 10);
+
+    const insert = await (db as any).query(
+      `
+      INSERT INTO users
+        (name, email, role, password_hash, phone_no, birthday, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
+      `,
+      [name, email, role, password_hash, phone_no ?? null, birthday ?? null, creator?.id ?? null]
     );
 
-    return NextResponse.json({ ok: true, user: rows[0] }, { status: 201 });
-  } catch (err) {
-    console.error("[POST /api/users] error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    const row = pickFirstRow(insert);
+
+    return NextResponse.json(
+      {
+        ok: true,
+        id: row?.id ?? null,
+        message: "User created successfully",
+      },
+      { status: 201 }
+    );
+  } catch (e: any) {
+    console.error("POST /api/users error:", e);
+    const msg = e?.code === "23505" ? "Email already exists" : "Failed to create user";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

@@ -1,267 +1,343 @@
 /*******************************************************
+* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
 * File:      app/dashboard/admin/manage-users/page.tsx
-* Purpose:   Admin UI to list, search, edit, and delete users
+* Author:    IT Project – Medical Pantry – Group 17
+* Date:      16-10-2025
+* Version:   2.0
+* Purpose:   Admin UI to view & search users
+*            - Desktop: table layout
+*            - Mobile: card layout
+*            - Actions: Edit / Delete (admin only)
+* Revisions:
+* v2.0 - Responsive table→card, actions, created info
 *******************************************************/
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
-type User = {
+type UserRow = {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "volunteer";
-  created_at?: string | null;
+  role: "admin" | "volunteer" | string;
+  // optional from API:
+  createdAt?: string | null;          // ISO string
+  createdByName?: string | null;      // name of creator (admin)
+  createdByEmail?: string | null;     // email of creator (admin)
+};
+
+type SessionMe = {
+  role: "admin" | "volunteer" | string;
 };
 
 export default function ManageUsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<User | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [pwd, setPwd] = useState(""); // optional password change
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialQ = searchParams.get("q") || "";
+  const [q, setQ] = useState(initialQ);
+  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [err, setErr] = useState("");
+
+  // who is viewing (to gate actions)
+  const [me, setMe] = useState<SessionMe | null>(null);
+
+  const queryString = useMemo(
+    () => (q ? `?q=${encodeURIComponent(q)}` : ""),
+    [q]
+  );
+
+  const fetchMe = async () => {
+    // Adjust this endpoint to whatever you already use to read session
+    try {
+      const res = await fetch("/api/session", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setMe({ role: data?.user?.role ?? "volunteer" });
+      } else {
+        setMe({ role: "volunteer" }); // safest default
+      }
+    } catch {
+      setMe({ role: "volunteer" });
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
-    setError(null);
+    setErr("");
     try {
-      const res = await fetch("/api/users", { cache: "no-store" });
+      const res = await fetch(`/api/users${queryString}`, {
+        credentials: "include",
+      });
       const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "Failed to load users");
+      if (!res.ok) {
+        setErr(data?.error || "Failed to fetch users");
         setUsers([]);
       } else {
-        setUsers(data.users);
+        // Expecting shape: { users: UserRow[] }
+        setUsers(Array.isArray(data.users) ? data.users : []);
       }
-    } catch (e) {
-      console.error(e);
-      setError("Network or server error");
+    } catch {
+      setErr("Network error while loading users.");
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchMe();
   }, []);
 
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return users;
-    return users.filter(
-      (u) =>
-        u.name.toLowerCase().includes(s) ||
-        u.email.toLowerCase().includes(s) ||
-        u.role.toLowerCase().includes(s)
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryString]);
+
+  const onSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    router.replace(
+      `/dashboard/admin/manage-users${params.toString() ? `?${params}` : ""}`
     );
-  }, [q, users]);
-
-  const onEdit = (u: User) => {
-    setEditing(u);
-    setPwd("");
+    // fetchUsers runs via useEffect
   };
 
-  const onDelete = async (u: User) => {
-    if (!confirm(`Delete user "${u.email}"? This cannot be undone.`)) return;
+  const formatDate = (iso?: string | null) => {
+    if (!iso) return "—";
     try {
-      const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        alert(data?.error ?? "Failed to delete user");
-        return;
-      }
-      setUsers((prev) => prev.filter((x) => x.id !== u.id));
-    } catch (e) {
-      console.error(e);
-      alert("Network or server error");
-    }
-  };
-
-  const onSave = async () => {
-    if (!editing) return;
-    setSaving(true);
-    try {
-      const payload: any = { name: editing.name, role: editing.role };
-      if (pwd) payload.password = pwd;
-
-      const res = await fetch(`/api/users/${editing.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       });
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        alert(data?.error ?? "Failed to update user");
-        setSaving(false);
-        return;
-      }
-
-      // Update in list
-      setUsers((prev) => prev.map((x) => (x.id === editing.id ? data.user : x)));
-      setEditing(null);
-      setPwd("");
-    } catch (e) {
-      console.error(e);
-      alert("Network or server error");
-    } finally {
-      setSaving(false);
+    } catch {
+      return "—";
     }
   };
+
+  const handleDelete = async (u: UserRow) => {
+    const ok = window.confirm(
+      `Delete user “${u.name}” (${u.email})? This cannot be undone.`
+    );
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/users/${u.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || "Failed to delete user.");
+        return;
+      }
+      // Refresh
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch {
+      alert("Network error while deleting user.");
+    }
+  };
+
+  const canManage = me?.role === "admin";
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <section className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold tracking-tight">Manage Users</h1>
-          <Link href="/dashboard/admin" className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">
-            Back to Admin
-          </Link>
-        </div>
-
-        {/* Search + Create */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, email, role…"
-            className="w-full sm:w-2/3 rounded-lg border px-3 py-2"
-          />
-          <Link
-            href="/dashboard/admin/create-user"
-            className="rounded-lg bg-red-700 hover:bg-red-800 text-white px-4 py-2 text-center"
+    <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-semibold">Manage Users</h1>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            className="px-4 py-2 rounded border"
+            onClick={() => router.push("/dashboard/admin")}
           >
-            Create User
-          </Link>
+            Back to Admin
+          </button>
+          {canManage && (
+            <button
+              type="button"
+              className="px-4 py-2 rounded bg-red-700 text-white hover:bg-red-800"
+              onClick={() => router.push("/dashboard/admin/create-user")}
+            >
+              Create User
+            </button>
+          )}
         </div>
+      </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto rounded-xl border bg-white">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold">Name</th>
-                <th className="px-4 py-3 text-left font-semibold">Email</th>
-                <th className="px-4 py-3 text-left font-semibold">Role</th>
-                <th className="px-4 py-3 text-left font-semibold">Created</th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td className="px-4 py-4 text-gray-500" colSpan={5}>
-                    Loading…
-                  </td>
-                </tr>
-              )}
-              {!loading && filtered.length === 0 && (
-                <tr>
-                  <td className="px-4 py-6 text-gray-500" colSpan={5}>
-                    No users found.
-                  </td>
-                </tr>
-              )}
-              {!loading &&
-                filtered.map((u) => (
-                  <tr key={u.id} className="border-t">
-                    <td className="px-4 py-3">{u.name}</td>
-                    <td className="px-4 py-3">{u.email}</td>
-                    <td className="px-4 py-3">{u.role}</td>
-                    <td className="px-4 py-3">
-                      {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => onEdit(u)}
-                          className="rounded-lg border px-3 py-1.5 hover:bg-gray-50"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => onDelete(u)}
-                          className="rounded-lg bg-red-600 hover:bg-red-700 text-white px-3 py-1.5"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+      {/* Search */}
+      <form onSubmit={onSearchSubmit} className="mb-4">
+        <input
+          className="w-full border rounded-xl px-4 py-3"
+          placeholder="Search by name, email, role…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </form>
+
+      {err && (
+        <div className="mb-4 p-3 rounded border border-red-300 text-red-700 bg-red-50">
+          {err}
         </div>
+      )}
 
-        {/* Edit Drawer / Panel */}
-        {editing && (
-          <div className="fixed inset-0 bg-black/20 flex items-end sm:items-center justify-center z-40">
-            <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold">Edit User</h2>
-                <button onClick={() => setEditing(null)} className="text-gray-600 hover:text-black">
-                  ✕
+      {/* Mobile: cards */}
+      <ul className="space-y-3 md:hidden">
+        {loading ? (
+          <li className="text-gray-500">Loading…</li>
+        ) : users.length === 0 ? (
+          <li className="text-gray-500">No users found.</li>
+        ) : (
+          users.map((u) => (
+            <li
+              key={u.id}
+              className="rounded-2xl border bg-white shadow-sm p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold">{u.name}</div>
+                  <div className="text-sm text-gray-600">{u.email}</div>
+                  <div className="mt-1 text-sm">
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs capitalize">
+                      {u.role}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className="text-blue-700 hover:underline whitespace-nowrap"
+                  onClick={() =>
+                    router.push(`/dashboard/admin/manage-users/${u.id}`)
+                  }
+                >
+                  View
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <label className="text-sm block">
-                  <span className="block text-gray-700 mb-1">Name</span>
-                  <input
-                    value={editing.name}
-                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                    className="w-full rounded-lg border px-3 py-2"
-                  />
-                </label>
+              <div className="mt-3 grid grid-cols-2 gap-y-1 text-sm text-gray-600">
+                <div className="font-medium text-gray-700">Created</div>
+                <div>{formatDate(u.createdAt)}</div>
+                <div className="font-medium text-gray-700">Created By</div>
+                <div>
+                  {u.createdByName
+                    ? `${u.createdByName}${
+                        u.createdByEmail ? ` (${u.createdByEmail})` : ""
+                      }`
+                    : "—"}
+                </div>
+              </div>
 
-                <label className="text-sm block">
-                  <span className="block text-gray-700 mb-1">Role</span>
-                  <select
-                    value={editing.role}
-                    onChange={(e) =>
-                      setEditing({ ...editing, role: e.target.value as "admin" | "volunteer" })
+              {canManage && (
+                <div className="mt-3 flex gap-3">
+                  <button
+                    className="px-3 py-1.5 rounded border hover:bg-gray-50"
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/admin/manage-users/${u.id}/edit`
+                      )
                     }
-                    className="w-full rounded-lg border px-3 py-2"
                   >
-                    <option value="volunteer">Volunteer</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </label>
-
-                <label className="text-sm block">
-                  <span className="block text-gray-700 mb-1">New Password (optional)</span>
-                  <input
-                    type="password"
-                    value={pwd}
-                    onChange={(e) => setPwd(e.target.value)}
-                    placeholder="Leave blank to keep existing"
-                    className="w-full rounded-lg border px-3 py-2"
-                  />
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 mt-5">
-                <button
-                  onClick={() => setEditing(null)}
-                  className="rounded-lg border px-4 py-2 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={onSave}
-                  disabled={saving}
-                  className="rounded-lg bg-red-700 hover:bg-red-800 text-white px-5 py-2 disabled:opacity-60"
-                >
-                  {saving ? "Saving…" : "Save changes"}
-                </button>
-              </div>
-            </div>
-          </div>
+                    Edit
+                  </button>
+                  <button
+                    className="px-3 py-1.5 rounded border border-red-300 text-red-700 hover:bg-red-50"
+                    onClick={() => handleDelete(u)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </li>
+          ))
         )}
-      </section>
-    </main>
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="overflow-hidden border rounded-2xl hidden md:block">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr className="text-left text-gray-600">
+              <th className="py-3 px-4">Name</th>
+              <th className="py-3 px-4">Email</th>
+              <th className="py-3 px-4">Role</th>
+              <th className="py-3 px-4">Created</th>
+              <th className="py-3 px-4">Created By</th>
+              <th className="py-3 px-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td className="py-4 px-4 text-gray-500" colSpan={6}>
+                  Loading…
+                </td>
+              </tr>
+            ) : users.length === 0 ? (
+              <tr>
+                <td className="py-6 px-4 text-gray-500" colSpan={6}>
+                  No users found.
+                </td>
+              </tr>
+            ) : (
+              users.map((u) => (
+                <tr key={u.id} className="border-t">
+                  <td className="py-3 px-4">{u.name}</td>
+                  <td className="py-3 px-4">{u.email}</td>
+                  <td className="py-3 px-4 capitalize">{u.role}</td>
+                  <td className="py-3 px-4 text-gray-700">
+                    {formatDate(u.createdAt)}
+                  </td>
+                  <td className="py-3 px-4 text-gray-700">
+                    {u.createdByName
+                      ? `${u.createdByName}${
+                          u.createdByEmail ? ` (${u.createdByEmail})` : ""
+                        }`
+                      : "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex gap-3">
+                      <button
+                        className="text-blue-700 hover:underline"
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/admin/manage-users/${u.id}`
+                          )
+                        }
+                      >
+                        View
+                      </button>
+                      {canManage && (
+                        <>
+                          <button
+                            className="text-gray-700 hover:underline"
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/admin/manage-users/${u.id}/edit`
+                              )
+                            }
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="text-red-700 hover:underline"
+                            onClick={() => handleDelete(u)}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

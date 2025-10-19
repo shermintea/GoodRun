@@ -11,7 +11,6 @@
 * v1.0 - Initial implementation of Leaflet map and tracking
 *        user location
 *******************************************************/
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -26,8 +25,13 @@ L.Icon.Default.mergeOptions({
     shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
+type Coordinates = [number, number];
+
 export default function MapView() {
-    const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+    const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+    const [destinations, setDestinations] = useState<Coordinates[]>([]);
+
+    // User's current position
     useEffect(() => {
         if ("geolocation" in navigator){
             navigator.geolocation.getCurrentPosition(
@@ -44,6 +48,47 @@ export default function MapView() {
         }
     }, []);
 
+    // Fetch destination coordinates from API
+    useEffect(() => {
+        async function fetchCoordinates(address: string): Promise<Coordinates | null> {
+            try {
+                const res = await fetch(`/api/geocoding?address=${encodeURIComponent(address)}`);
+                if (!res.ok) {
+                    console.warn(`Failed to fetch coordinates for "${address}"`);
+                    return null;
+                }
+                const data = await res.json();
+                if (data.latitude && data.longitude) {
+                    return [data.latitude, data.longitude] as Coordinates;
+                }
+                return null;
+            } catch (err) {
+                console.error(`Error fetching coordinates for "${address}":`, err);
+                return null;
+            }
+        }
+
+        // Function to load the addresses from DB, will need to edit (currently hardcoded)
+        async function loadDestinations() {
+            const addresses = [
+                "University of Melbourne, Parkville VIC",
+                "495 Rathdowne Street, Carlton, VIC",
+                "Unit 9/47-51 Little Boundary Road Laverton North", // Medical Pantry Warehouse Address
+            ];
+
+            const coords: Coordinates[] = [];
+
+            for (const addr of addresses) {
+                const result = await fetchCoordinates(addr);
+                if (result) coords.push(result);
+            }
+
+            setDestinations(coords);
+        }
+
+        loadDestinations();
+    }, []);
+
     return (
         <MapContainer
             center={userLocation || [-37.7963, 144.9614]} // fallback to UniMelb
@@ -57,9 +102,16 @@ export default function MapView() {
 
             {userLocation && (
                 <Marker position={userLocation}>
-                <Popup>📍 You are here</Popup>
-            </Marker>
+                    <Popup>📍 You are here</Popup>
+                </Marker>
             )}
+
+            {destinations.map((pos, i) => (
+                <Marker key={i} position={pos}>
+                    <Popup>Destination {i + 1}</Popup>
+                </Marker>
+            ))}
         </MapContainer>
     );
 }
+

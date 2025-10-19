@@ -1,253 +1,329 @@
-// app/dashboard/admin/create-pickup/page.tsx
+/*****************************************************************************************
+ * Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+ * File:      app/dashboard/admin/create-pickup/page.tsx
+ * Author:    IT Project – Medical Pantry – Group 17
+ * Date:      16-10-2025
+ * Version:   2.5
+ * Purpose:   Admin form for creating pick-up jobs
+ *            - Posts to /api/create-pickup
+ *            - Includes "Job Name" separate from Organisation Name
+ *            - Pick-up address is independent (not tied to organisation)
+ *            - Handles all errors gracefully, including non-JSON responses
+ ******************************************************************************************/
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-type FormState = {
-  // optional: job can start "available" and be assigned later
-  assigned_to?: number | "";
-  deadline_date: string;          // YYYY-MM-DD
-  weight: string;                 // store as string, convert to number on submit
-  value: string;                  // store as string, convert to number on submit
-  size: "tiny" | "small" | "medium" | "large";
-  follow_up: boolean;
-  intake_priority: "low" | "medium" | "high";
-  organisation_id: number | "";
+type FormData = {
+  jobName: string;
+  organisationName: string;
+  address: string;
+  weight: string;
+  value: string;
+  size: string;
+  intakePriority: string;
+  deadlineDate: string;
+  followUp: boolean;
 };
 
-export default function CreatePickUpPage() {
+export default function CreatePickupPage() {
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string>("");
 
-  // Default values (adjust organisation_id if you have a single org)
-  const [form, setForm] = useState<FormState>({
-    assigned_to: "",
-    deadline_date: "",
+  const [form, setForm] = useState<FormData>({
+    jobName: "",
+    organisationName: "",
+    address: "",
     weight: "",
     value: "",
-    size: "small",
-    follow_up: false,
-    intake_priority: "medium",
-    organisation_id: "" as unknown as number,
+    size: "Medium",
+    intakePriority: "High",
+    deadlineDate: "",
+    followUp: false,
   });
 
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const validate = (): string | null => {
-    if (!form.deadline_date) return "Please select a deadline date.";
-    if (form.weight === "" || Number(form.weight) < 0) return "Weight must be a non-negative number.";
-    if (form.value === "" || Number(form.value) < 0) return "Value must be a non-negative number.";
-    if (!form.organisation_id) return "Please enter an organisation id.";
-    return null;
+  /** Handles input/select/textarea changes (non-checkbox). */
+  const handleFieldChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
+  /** Handles checkbox separately. */
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: checked }));
+  };
 
-    const msg = validate();
-    if (msg) {
-      setError(msg);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    // --- client-side validation
+    const weightNum = Number(form.weight);
+    const valueNum = Number(form.value);
+
+    if (!form.organisationName.trim()) {
+      setError("Organisation name is required.");
+      return;
+    }
+    if (!form.address.trim()) {
+      setError("Pick-up address is required.");
+      return;
+    }
+    if (Number.isNaN(weightNum) || weightNum < 0) {
+      setError("Please enter a valid non-negative weight.");
+      return;
+    }
+    if (Number.isNaN(valueNum) || valueNum < 0) {
+      setError("Please enter a valid non-negative value.");
+      return;
+    }
+    if (!form.deadlineDate) {
+      setError("Deadline date is required.");
       return;
     }
 
-    setError("");
-    setSubmitting(true);
-
-    // Build payload expected by POST /api/jobs
+    // --- map frontend fields to backend payload
     const payload = {
-      assigned_to:
-        form.assigned_to === "" ? undefined : Number(form.assigned_to),
-      deadline_date: form.deadline_date,
-      weight: Number(form.weight),
-      value: Number(form.value),
-      size: form.size,
-      follow_up: form.follow_up,
-      intake_priority: form.intake_priority,
-      organisation_id: Number(form.organisation_id),
-      // progress_stage omitted -> defaults to "available" on the server
+      jobName: form.jobName.trim(),
+      organisationName: form.organisationName.trim(),
+      address: form.address.trim(),
+      weight: weightNum,
+      value: valueNum,
+      size: form.size.toLowerCase(),
+      intakePriority: form.intakePriority.toLowerCase(),
+      deadlineDate: form.deadlineDate,
+      followUp: form.followUp,
     };
 
     try {
-      const res = await fetch("/api/jobs", {
+      const res = await fetch("/api/create-pickup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "Failed to create job.");
-        setSubmitting(false);
+      const ct = res.headers.get("content-type") || "";
+      let data: any = null;
+      let text = "";
+
+      if (ct.includes("application/json")) {
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
+        }
+      } else {
+        try {
+          text = await res.text();
+        } catch {
+          text = "";
+        }
+      }
+
+      if (!res.ok) {
+        setError(data?.error || text || `${res.status} ${res.statusText}`);
         return;
       }
 
-      // Success: go to Ongoing Jobs (or show a toast and stay)
-      router.push("/dashboard/ongoingJobs");
-    } catch (err) {
+      setSuccess("✅ Pick-up job created successfully.");
+      setForm({
+        jobName: "",
+        organisationName: "",
+        address: "",
+        weight: "",
+        value: "",
+        size: "Medium",
+        intakePriority: "High",
+        deadlineDate: "",
+        followUp: false,
+      });
+    } catch (err: any) {
       console.error(err);
-      setError("Network error. Please try again.");
-      setSubmitting(false);
+      setError(err?.message || "Unexpected error occurred. Please try again.");
     }
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Top header comes from your global layout; this section is the page body */}
-      <section className="mx-auto max-w-3xl px-6 py-10">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Create New Pick Up Request</h1>
-          <Link
-            href="/dashboard/admin"
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50"
-          >
-            Back to Admin
-          </Link>
+    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm mt-6">
+      <h1 className="text-2xl font-semibold text-red-700 mb-4">
+        Create New Pick-Up Request
+      </h1>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Job Name */}
+        <div>
+          <label className="font-medium">Job Name</label>
+          <input
+            type="text"
+            name="jobName"
+            value={form.jobName}
+            onChange={handleFieldChange}
+            className="w-full border rounded p-2"
+            placeholder="e.g. Helping Hands – Flemington pickup"
+          />
+          <p className="text-xs text-gray-500">
+            A short label for this job (for admins and volunteers).
+          </p>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6"
-        >
-          {/* Row: date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="text-sm">
-              <span className="mb-1 block text-gray-700">Deadline date</span>
-              <input
-                type="date"
-                value={form.deadline_date}
-                onChange={(e) => set("deadline_date", e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600 bg-gray-50"
-                required
-              />
-            </label>
+        {/* Organisation Name */}
+        <div>
+          <label className="font-medium">Organisation Name</label>
+          <input
+            type="text"
+            name="organisationName"
+            value={form.organisationName}
+            onChange={handleFieldChange}
+            className="w-full border rounded p-2"
+            placeholder="e.g. Helping Hands"
+            required
+          />
+          <p className="text-xs text-gray-500">
+            Must match an existing organisation record.
+          </p>
+        </div>
 
-            <label className="text-sm">
-              <span className="mb-1 block text-gray-700">Assign to (user id)</span>
-              <input
-                type="number"
-                placeholder="Optional"
-                value={form.assigned_to}
-                onChange={(e) => set("assigned_to", e.target.value === "" ? "" : Number(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600 bg-gray-50"
-                min={1}
-              />
-            </label>
+        {/* Pick-up Address */}
+        <div>
+          <label className="font-medium">Pick-up Address (max 200 chars)</label>
+          <textarea
+            name="address"
+            value={form.address}
+            onChange={handleFieldChange}
+            maxLength={200}
+            className="w-full border rounded p-2"
+            placeholder="e.g. 5 Victoria Street, Flemington"
+            required
+          />
+          <p className="text-xs text-gray-500">
+            This is the pick-up location — it doesn’t have to match the organisation’s address.
+          </p>
+        </div>
+
+        {/* Weight & Value */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="font-medium">Weight (kg)</label>
+            <input
+              type="number"
+              name="weight"
+              value={form.weight}
+              onChange={handleFieldChange}
+              className="w-full border rounded p-2"
+              required
+              min="0"
+              step="0.1"
+            />
           </div>
-
-          {/* Row: weight/value */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="text-sm">
-              <span className="mb-1 block text-gray-700">Weight (kg)</span>
-              <input
-                type="number"
-                min={0}
-                step="0.1"
-                value={form.weight}
-                onChange={(e) => set("weight", e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600 bg-gray-50"
-                required
-              />
-            </label>
-
-            <label className="text-sm">
-              <span className="mb-1 block text-gray-700">Value ($)</span>
-              <input
-                type="number"
-                min={0}
-                step="0.1"
-                value={form.value}
-                onChange={(e) => set("value", e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600 bg-gray-50"
-                required
-              />
-            </label>
+          <div>
+            <label className="font-medium">Value ($)</label>
+            <input
+              type="number"
+              name="value"
+              value={form.value}
+              onChange={handleFieldChange}
+              className="w-full border rounded p-2"
+              required
+              min="0"
+              step="1"
+            />
           </div>
+        </div>
 
-          {/* Row: size / follow-up */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="text-sm">
-              <span className="mb-1 block text-gray-700">Size</span>
-              <select
-                value={form.size}
-                onChange={(e) => set("size", e.target.value as FormState["size"])}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600 bg-gray-50"
-              >
-                <option value="tiny">Tiny</option>
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
-            </label>
-
-            <label className="text-sm flex items-center gap-3 pt-7 md:pt-7">
-              <input
-                type="checkbox"
-                checked={form.follow_up}
-                onChange={(e) => set("follow_up", e.target.checked)}
-                className="h-5 w-5 accent-red-600"
-              />
-              <span className="text-gray-700">Follow-up required</span>
-            </label>
-          </div>
-
-          {/* Row: priority / org */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="text-sm">
-              <span className="mb-1 block text-gray-700">Intake priority</span>
-              <select
-                value={form.intake_priority}
-                onChange={(e) => set("intake_priority", e.target.value as FormState["intake_priority"])}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600 bg-gray-50"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
-
-            <label className="text-sm">
-              <span className="mb-1 block text-gray-700">Organisation ID</span>
-              <input
-                type="number"
-                min={1}
-                value={form.organisation_id}
-                onChange={(e) => set("organisation_id", Number(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-600 bg-gray-50"
-                required
-              />
-            </label>
-          </div>
-
-          {/* Errors */}
-          {error && (
-            <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-200">
-              {error}
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-red-600 px-5 py-2 text-white font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/40 disabled:opacity-60"
+        {/* Size & Priority */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="font-medium">Package Size</label>
+            <select
+              name="size"
+              value={form.size}
+              onChange={handleFieldChange}
+              className="w-full border rounded p-2"
             >
-              {submitting ? "Creating…" : "Create Request"}
-            </button>
-            <Link
-              href="/dashboard/ongoingJobs"
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50"
-            >
-              Cancel
-            </Link>
+              <option>Tiny</option>
+              <option>Small</option>
+              <option>Medium</option>
+              <option>Large</option>
+            </select>
           </div>
-        </form>
-      </section>
-    </main>
+          <div>
+            <label className="font-medium">Intake Priority</label>
+            <select
+              name="intakePriority"
+              value={form.intakePriority}
+              onChange={handleFieldChange}
+              className="w-full border rounded p-2"
+            >
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Deadline & Follow-up */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="font-medium">Deadline Date</label>
+            <input
+              type="date"
+              name="deadlineDate"
+              value={form.deadlineDate}
+              onChange={handleFieldChange}
+              className="w-full border rounded p-2"
+              required
+            />
+          </div>
+          <div className="flex items-center space-x-2 mt-7">
+            <input
+              id="followUp"
+              type="checkbox"
+              name="followUp"
+              checked={form.followUp}
+              onChange={handleCheckboxChange}
+            />
+            <label htmlFor="followUp">Follow-up Required</label>
+          </div>
+        </div>
+
+        {/* Messages */}
+        {error && (
+          <div className="border border-red-300 bg-red-50 text-red-700 p-2 rounded">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="border border-green-300 bg-green-50 text-green-700 p-2 rounded">
+            {success}
+          </div>
+        )}
+
+        {/* Buttons */}
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
+          >
+            Add Job
+          </button>
+          <button
+            type="button"
+            className="bg-gray-200 px-4 py-2 rounded"
+            onClick={() => router.push("/dashboard/admin")}
+          >
+            Back to Admin
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

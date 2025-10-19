@@ -13,6 +13,8 @@
 
 import JobDetail from "./jobDetail";
 
+
+// params.id is available here bc this is a server component
 interface JobDetailPageProps {
   params: { id: string };
 }

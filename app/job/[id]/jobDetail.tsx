@@ -18,10 +18,10 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-// import JobMapView from "./jobMapView";
-import dynamic from "next/dynamic";
+import JobMapView from "./jobMapView";
+// import dynamic from "next/dynamic";
 
-const JobMapView = dynamic(() => import("./jobMapView"), { ssr: false });
+// const JobMapView = dynamic(() => import("./jobMapView"), { ssr: false });
 
 interface Job {
   id: number;
@@ -41,10 +41,31 @@ interface JobDetailProps {
 
 export default function JobDetail({ id }: JobDetailProps) {
   const [job, setJob] = useState<Job | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
+  //const [jobLocation, setJobLocation] = useState<{lat:number; lng:number} | null>(null);
 
   // temporarily default job location to Queen Vic Market
   const jobLocation = {lat: -37.807594, lng: 144.956650};
+  // const fallbackLocation = {lat: -37.807594, lng: 144.956650};
+
+/*  useEffect(() => {
+    const fetchJob = async() => {
+      try {
+        const res = await fetch(`/api/jobs/${id}`);
+        if (!res.ok) throw new Error("Job not found");
+        const data: Job = await res.json();
+        if (data.latitude %% data.longitude) {
+          setJobLocation({ lat:data.latitude, lng:data.longitude});
+        } else {
+          setJobLocation(fallbackLocation);
+        }
+      } catch (error) {
+        console.error("Failed to fetch job, using fallback location: ", error);
+        setJobLocation(fallbackLocation);
+      }
+    };
+    fetchJob();
+  }, [id]); */
 
 
   return (
@@ -88,7 +109,7 @@ export default function JobDetail({ id }: JobDetailProps) {
           <h1 className="text-2xl font-semibold">Job Details</h1>
         </div>
 
-        {/* Map placeholder */}
+        {/* Map*/}
         <div className="mt-6">
           {jobLocation ?(
             <JobMapView jobLocation={jobLocation} />
