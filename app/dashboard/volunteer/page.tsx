@@ -24,7 +24,7 @@
 //"use client";     dashboard is now server-side
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/utils/auth";
 import { redirect } from "next/navigation";
 import MapView from "@/app/dashboard/mapview";
 
@@ -122,7 +122,8 @@ export default async function DashboardPage() {
           {/* Map placeholder */}
           <div className="md:col-span-2">
             <div className="h-[400px] w-full rounded-lg border border-gray-200 overflow-hidden">
-              <MapView />
+              <MapView showUserLocation={true}/>
+              
             </div>
           </div>
         </div>

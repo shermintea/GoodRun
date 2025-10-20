@@ -1,41 +1,181 @@
-// app/dashboard/admin/page.tsx
+/*******************************************************
+* Project:   COMP30023 IT Project 2025 – GoodRun Volunteer App
+* File:      app/dashboard/admin/page.tsx
+* Author:    IT Project – Medical Pantry – Group 17
+* Date:      16-10-2025
+* Version:   2.5
+* Purpose:   Admin dashboard layout (Figma-aligned)
+* Change:    Personalised greeting using session / users table
+*******************************************************/
+
+"use client";
+
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 
 export default function AdminDashboard() {
+  const { data: session, status } = useSession();
+  const [dbName, setDbName] = useState<string | null>(null);
+
+  // Quick best-effort name from session first
+  const sessionName =
+    (session?.user as any)?.name ||
+    (session?.user?.email
+      ? session.user.email.split("@")[0]
+      : null);
+
+  // If session has no name, try API lookup (must exist on your side)
+  useEffect(() => {
+    const needLookup = !sessionName && status === "authenticated";
+    if (!needLookup) return;
+
+    (async () => {
+      try {
+        const r = await fetch("/api/users/me", { cache: "no-store", credentials: "include" });
+        if (!r.ok) return;
+        const data = await r.json();
+        const name: string | null =
+          data?.user?.name ??
+          data?.name ??
+          null;
+        if (name) setDbName(name);
+      } catch {
+        // ignore; we'll keep the fallback
+      }
+    })();
+  }, [status, sessionName]);
+
+  const displayName = useMemo(() => {
+    const raw = dbName || sessionName;
+    if (!raw) return "there";
+    // Capitalise first letter nicely
+    const trimmed = String(raw).trim();
+    if (!trimmed) return "there";
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  }, [dbName, sessionName]);
+
   return (
-    <>
-      <section className="mb-8 rounded-xl bg-white border border-gray-200 p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
-        <p className="mt-2 text-gray-600">Manage users and jobs.</p>
-      </section>
+    <main className="min-h-screen bg-gray-50">
+      {/* Main dashboard content */}
+      <section className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-8 space-y-8">
+        {/* Greeting + Create Request */}
+        <div className="rounded-2xl bg-white border border-gray-200 p-6 shadow-sm">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            Hi, {displayName}!
+          </h1>
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="rounded-lg bg-white p-6 border shadow-sm">
-          <h2 className="font-semibold">Users</h2>
-          <p className="mt-2 text-sm text-gray-600">Create and manage volunteers/admins.</p>
-          <Link href="/adminJobDetails" className="mt-4 inline-block rounded-md bg-[#171e3a] px-4 py-2 text-white hover:bg-[#0f152c]">
-            Open Admin Tools
+          {/* Primary CTA */}
+          <Link
+            href="/dashboard/admin/create-pickup"
+            className="mt-6 block rounded-2xl bg-red-700 hover:bg-red-800 text-white text-center px-6 py-10 shadow-sm transition"
+          >
+            <div className="text-2xl sm:text-[28px] font-extrabold leading-snug">
+              Create New Pick Up <br className="hidden sm:block" />
+              Request
+            </div>
           </Link>
-        </div>
 
-        <div className="rounded-lg bg-white p-6 border shadow-sm">
-          <h2 className="font-semibold">Jobs Overview</h2>
-          <p className="mt-2 text-sm text-gray-600">Track current and available jobs.</p>
-          <div className="mt-4 space-x-3">
-            <Link href="/ongoingJobs" className="rounded-md bg-[#171e3a] px-4 py-2 text-white hover:bg-[#0f152c]">
-              Ongoing
-            </Link>
-            <Link href="/availableJobs" className="rounded-md bg-[#171e3a] px-4 py-2 text-white hover:bg-[#0f152c]">
-              Available
-            </Link>
+          {/* Quick Actions */}
+          <div className="mt-8 grid grid-cols-2 gap-4 text-center">
+            <QuickAction
+              label="My Profile"
+              href="/dashboard/profile"
+              icon={
+                <svg viewBox="0 0 24 24" className="h-6 w-6">
+                  <path
+                    fill="currentColor"
+                    d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.239-8 5v1h16v-1c0-2.761-3.58-5-8-5Z"
+                  />
+                </svg>
+              }
+            />
+            <QuickAction
+              label="Completed Jobs"
+              href="/dashboard/jobHistory"
+              icon={
+                <svg viewBox="0 0 24 24" className="h-6 w-6">
+                  <path
+                    fill="currentColor"
+                    d="M20 6h-4.586l-2-2H10.59l-2 2H4v14h16Zm-9 3h2v6h-2Zm0 8h2v2h-2Z"
+                  />
+                </svg>
+              }
+            />
           </div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 border shadow-sm">
-          <h2 className="font-semibold">Settings</h2>
-          <p className="mt-2 text-sm text-gray-600">Future: org settings, permissions, etc.</p>
+        {/* Menu Section */}
+        <div className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-xl font-extrabold tracking-tight text-center mb-5">
+            Menu
+          </h2>
+
+          <div className="space-y-4">
+            <MenuButton href="/dashboard/admin/create-user" variant="dark">
+              Create New Users
+            </MenuButton>
+
+            <MenuButton href="/dashboard/admin/manage-users" variant="dark">
+              Manage Users
+            </MenuButton>
+
+            <MenuButton href="/dashboard/availableJobs" variant="red">
+              Browse Available Jobs
+            </MenuButton>
+
+            <MenuButton href="/dashboard/ongoingJobs" variant="red">
+              View All Ongoing Jobs
+            </MenuButton>
+          </div>
         </div>
       </section>
-    </>
+    </main>
+  );
+}
+
+/* ---------- Small UI helpers ---------- */
+function QuickAction({
+  label,
+  href,
+  icon,
+}: {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col items-center gap-2 rounded-xl bg-white p-4 shadow-sm border border-gray-200 hover:border-gray-300 transition"
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#11183A] text-white group-hover:opacity-90">
+        {icon}
+      </div>
+      <div className="text-sm font-medium text-gray-900">{label}</div>
+    </Link>
+  );
+}
+
+function MenuButton({
+  href,
+  children,
+  variant = "dark",
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: "dark" | "red";
+}) {
+  const cls =
+    variant === "dark"
+      ? "bg-[#11183A] hover:bg-[#0f152c] text-white"
+      : "bg-red-700 hover:bg-red-800 text-white";
+  return (
+    <Link
+      href={href}
+      className={`block w-full text-center rounded-xl px-5 py-3 font-semibold shadow-sm transition ${cls}`}
+    >
+      {children}
+    </Link>
   );
 }
