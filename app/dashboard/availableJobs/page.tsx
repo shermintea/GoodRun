@@ -5,6 +5,7 @@
 *            - Includes distance radius filter & distance sorting (GPS)
 *            - Includes urgency sort (if backend provides it; defaults to MEDIUM)
 *            - Admin-only toggle to show cancelled jobs
+*            - Admin-only follow-up filter (Needs / No / All)
 *            - Requests includeCancelled=1 so cancelled_in_delivery can be returned
 *******************************************************/
 "use client";
@@ -26,6 +27,8 @@ type JobRow = {
   lat?: number | null;
   lng?: number | null;
   urgency?: Urgency | null; // default to MEDIUM if missing
+  // Follow-up  flag (true when volunteer cancelled while delivering)
+  follow_up?: boolean | 0 | 1 | null;
 };
 
 type JobsApiResponse = { jobs?: JobRow[]; error?: string };
@@ -42,25 +45,26 @@ export default function AvailableJobsPage() {
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const sessionLoading = status === "loading";
 
-  // ---------- Filters (ported from teammate's mock) ----------
+  // ---------- Filters ----------
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState<number>(10);
   const [applyRadius, setApplyRadius] = useState<boolean>(true);
   const [sortOrder, setSortOrder] = useState<"nearest" | "farthest">("nearest");
   const [urgencySort, setUrgencySort] = useState<"none" | "highFirst" | "lowFirst">("none");
   const [showCancelled, setShowCancelled] = useState<boolean>(role === "admin"); // admin can toggle
+  // Follow-up filter (for admin only)
+  const [followUpFilter, setFollowUpFilter] = useState<"all" | "needs" | "no">("all");
 
   // Try auto-geolocation if already granted
   useEffect(() => {
     const tryAutoGeo = async () => {
       try {
-        // Permissions API may not exist on all browsers
         const anyNav: any = navigator;
         const status = await anyNav.permissions?.query?.({ name: "geolocation" as PermissionName });
         if (status?.state === "granted") {
           navigator.geolocation.getCurrentPosition(
             (pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => {}
+            () => { }
           );
         }
       } catch {
@@ -89,7 +93,6 @@ export default function AvailableJobsPage() {
     setActionMsg(null);
     setRefreshing(true);
     try {
-      // Ask backend to include cancelled jobs in payload
       const res = await fetch("/api/jobs/available?includeCancelled=1", { credentials: "include" });
       const data: JobsApiResponse = await res.json();
       if (!res.ok) {
@@ -130,6 +133,8 @@ export default function AvailableJobsPage() {
         setActionMsg(data?.error || "Could not reserve job");
       } else {
         setActionMsg("✅ Job reserved. Check your Ongoing Jobs.");
+        // Optionally redirect here if desired:
+        // router.push("/dashboard/ongoingJobs");
         setJobsRaw((prev) => prev.filter((j) => j.id !== id));
       }
     } catch {
@@ -162,9 +167,8 @@ export default function AvailableJobsPage() {
     }
   };
 
-  // ---------- Compute filtered/sorted list (matches teammate’s behavior) ----------
+  // ---------- Compute filtered/sorted list ----------
   const displayed = useMemo(() => {
-    // Map in computed distance + normalized urgency
     let list = jobsRaw.map((j) => {
       const hasCoords = typeof j.lat === "number" && typeof j.lng === "number";
       const distanceKm = userLoc && hasCoords ? haversineKm(userLoc, { lat: j.lat!, lng: j.lng! }) : null;
@@ -177,7 +181,20 @@ export default function AvailableJobsPage() {
 
     // Admin toggle to hide/show cancelled jobs (volunteers never see cancelled by default)
     if (!(role === "admin" && showCancelled)) {
-      list = list.filter((j) => !(j.progress_stage ?? "").includes("cancelled"));
+      list = list.filter((j) => !(j.progress_stage ?? "").toLowerCase().includes("cancelled"));
+    }
+
+    // Admin-only follow-up filter
+    if (role === "admin" && followUpFilter !== "all") {
+      list = list.filter((j: any) => {
+        const fu =
+          typeof j.follow_up === "boolean"
+            ? j.follow_up
+            : j.follow_up == 1;
+        const looksCancelled = (j.progress_stage ?? "").toLowerCase().includes("cancelled");
+        const needs = fu || looksCancelled; // treat cancelled as needing follow-up, even if boolean absent
+        return followUpFilter === "needs" ? needs : !needs;
+      });
     }
 
     // Radius filter (unknown distance remains visible)
@@ -196,10 +213,8 @@ export default function AvailableJobsPage() {
     // Distance sort: known first; then nearest/farthest
     if (userLoc) {
       list.sort((a: any, b: any) => {
-        const da = a.distanceKm,
-          db = b.distanceKm;
-        const aKnown = da != null,
-          bKnown = db != null;
+        const da = a.distanceKm, db = b.distanceKm;
+        const aKnown = da != null, bKnown = db != null;
         if (aKnown && !bKnown) return -1;
         if (!aKnown && bKnown) return 1;
         if (!aKnown && !bKnown) return 0;
@@ -208,11 +223,11 @@ export default function AvailableJobsPage() {
     }
 
     return list;
-  }, [jobsRaw, userLoc, radiusKm, applyRadius, sortOrder, urgencySort, role, showCancelled]);
+  }, [jobsRaw, userLoc, radiusKm, applyRadius, sortOrder, urgencySort, role, showCancelled, followUpFilter]);
 
   // ---------- UI helpers ----------
   const statusPill = (stage: string | null | undefined) => {
-    const s = stage ?? "unknown";
+    const s = (stage ?? "unknown").toLowerCase();
     if (s.includes("cancelled")) return "bg-gray-200 text-gray-700";
     if (s === "in_delivery") return "bg-blue-100 text-blue-700";
     if (s === "available") return "bg-green-100 text-green-700";
@@ -223,8 +238,8 @@ export default function AvailableJobsPage() {
     (u ?? "MEDIUM") === "HIGH"
       ? { text: "High", classes: "bg-rose-100 text-rose-700" }
       : (u ?? "MEDIUM") === "LOW"
-      ? { text: "Low", classes: "bg-sky-100 text-sky-700" }
-      : { text: "Medium", classes: "bg-amber-100 text-amber-700" };
+        ? { text: "Low", classes: "bg-sky-100 text-sky-700" }
+        : { text: "Medium", classes: "bg-amber-100 text-amber-700" };
 
   // ---------- Render ----------
   return (
@@ -248,9 +263,9 @@ export default function AvailableJobsPage() {
 
         {actionMsg && <div className="rounded-lg border px-4 py-2 bg-white">{actionMsg}</div>}
 
-        {/* Filters row (mirrors teammate layout) */}
+        {/* Filters row */}
         <div className="rounded-xl bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
             {/* Distance tile */}
             <div className="rounded-lg border p-3">
               <div className="text-xs font-medium text-gray-500 mb-2">Distance (km)</div>
@@ -327,6 +342,23 @@ export default function AvailableJobsPage() {
                 </label>
               )}
             </div>
+
+            {/* Follow-up filter (for admin only) */}
+            {role === "admin" && (
+              <div className="rounded-lg border p-3">
+                <div className="text-xs font-medium text-gray-500 mb-2">Sort by follow-up</div>
+                <select
+                  value={followUpFilter}
+                  onChange={(e) => setFollowUpFilter(e.target.value as "all" | "needs" | "no")}
+                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  aria-label="Filter by follow-up"
+                >
+                  <option value="all">All</option>
+                  <option value="needs">Needs follow-up</option>
+                  <option value="no">No follow-up</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -373,6 +405,18 @@ export default function AvailableJobsPage() {
                         km
                       </p>
                     )}
+                    {/* Optional: show follow-up badge to admins */}
+                    {role === "admin" && (
+                      <p className="text-xs">
+                        Follow-up:{" "}
+                        <b>
+                          {((typeof j.follow_up === "boolean" ? j.follow_up : j.follow_up == 1) ||
+                            (j.progress_stage ?? "").toLowerCase().includes("cancelled"))
+                            ? "Yes"
+                            : "No"}
+                        </b>
+                      </p>
+                    )}
                   </div>
 
                   {/* Role-based actions */}
@@ -407,6 +451,6 @@ export default function AvailableJobsPage() {
           </div>
         )}
       </section>
-    </main>
+    </main >
   );
 }
