@@ -4,7 +4,6 @@
 * Purpose:   List jobs for Available page; show REAL status.
 *            - Includes distance radius filter & distance sorting (GPS)
 *            - Includes urgency sort (if backend provides it; defaults to MEDIUM)
-*            - Admin-only toggle to show cancelled jobs
 *            - Admin-only follow-up filter (Needs / No / All)
 *            - Requests includeCancelled=1 so cancelled_in_delivery can be returned
 *******************************************************/
@@ -27,7 +26,7 @@ type JobRow = {
   lat?: number | null;
   lng?: number | null;
   urgency?: Urgency | null; // default to MEDIUM if missing
-  // Follow-up  flag (true when volunteer cancelled while delivering)
+  // Follow-up flag (true when volunteer cancelled while delivering) - but we key off progress_stage
   follow_up?: boolean | 0 | 1 | null;
 };
 
@@ -51,7 +50,6 @@ export default function AvailableJobsPage() {
   const [applyRadius, setApplyRadius] = useState<boolean>(true);
   const [sortOrder, setSortOrder] = useState<"nearest" | "farthest">("nearest");
   const [urgencySort, setUrgencySort] = useState<"none" | "highFirst" | "lowFirst">("none");
-  const [showCancelled, setShowCancelled] = useState<boolean>(role === "admin"); // admin can toggle
   // Follow-up filter (for admin only)
   const [followUpFilter, setFollowUpFilter] = useState<"all" | "needs" | "no">("all");
 
@@ -113,7 +111,6 @@ export default function AvailableJobsPage() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---------- Actions ----------
@@ -133,8 +130,6 @@ export default function AvailableJobsPage() {
         setActionMsg(data?.error || "Could not reserve job");
       } else {
         setActionMsg("✅ Job reserved. Check your Ongoing Jobs.");
-        // Optionally redirect here if desired:
-        // router.push("/dashboard/ongoingJobs");
         setJobsRaw((prev) => prev.filter((j) => j.id !== id));
       }
     } catch {
@@ -179,23 +174,20 @@ export default function AvailableJobsPage() {
       };
     });
 
-    // Admin toggle to hide/show cancelled jobs (volunteers never see cancelled by default)
-    if (!(role === "admin" && showCancelled)) {
-      list = list.filter((j) => !(j.progress_stage ?? "").toLowerCase().includes("cancelled"));
-    }
+    // Visibility rules:
+    // - Volunteers: never show cancelled_in_delivery
+    // - Admins: controlled by followUpFilter
+    list = list.filter((j) => {
+      const stage = (j.progress_stage ?? "").toLowerCase();
+      const isCancelledDelivery = stage === "cancelled_in_delivery";
 
-    // Admin-only follow-up filter
-    if (role === "admin" && followUpFilter !== "all") {
-      list = list.filter((j: any) => {
-        const fu =
-          typeof j.follow_up === "boolean"
-            ? j.follow_up
-            : j.follow_up == 1;
-        const looksCancelled = (j.progress_stage ?? "").toLowerCase().includes("cancelled");
-        const needs = fu || looksCancelled; // treat cancelled as needing follow-up, even if boolean absent
-        return followUpFilter === "needs" ? needs : !needs;
-      });
-    }
+      if (role !== "admin") {
+        return !isCancelledDelivery;
+      }
+      if (followUpFilter === "needs") return isCancelledDelivery;
+      if (followUpFilter === "no") return !isCancelledDelivery;
+      return true; // "all"
+    });
 
     // Radius filter (unknown distance remains visible)
     if (userLoc && applyRadius) {
@@ -223,7 +215,7 @@ export default function AvailableJobsPage() {
     }
 
     return list;
-  }, [jobsRaw, userLoc, radiusKm, applyRadius, sortOrder, urgencySort, role, showCancelled, followUpFilter]);
+  }, [jobsRaw, userLoc, radiusKm, applyRadius, sortOrder, urgencySort, role, followUpFilter]);
 
   // ---------- UI helpers ----------
   const statusPill = (stage: string | null | undefined) => {
@@ -255,7 +247,7 @@ export default function AvailableJobsPage() {
             type="button"
             onClick={load}
             disabled={refreshing}
-            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-medium px-4 py-2 rounded-lg transition disabled:opacity-60"
+            className="flex items-center gap-2 bg-white/2 0 hover:bg-white/30 text-white font-medium px-4 py-2 rounded-lg transition disabled:opacity-60"
           >
             {refreshing ? "Refreshing…" : "Refresh Jobs"}
           </button>
@@ -329,24 +321,12 @@ export default function AvailableJobsPage() {
                 <option value="highFirst">Highest first</option>
                 <option value="lowFirst">Lowest first</option>
               </select>
-
-              {/* Admin-only toggle for cancelled visibility */}
-              {role === "admin" && (
-                <label className="mt-3 flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={showCancelled}
-                    onChange={(e) => setShowCancelled(e.target.checked)}
-                  />
-                  Show cancelled jobs
-                </label>
-              )}
             </div>
 
-            {/* Follow-up filter (for admin only) */}
+            {/* Follow-up filter (admin only) */}
             {role === "admin" && (
               <div className="rounded-lg border p-3">
-                <div className="text-xs font-medium text-gray-500 mb-2">Sort by follow-up</div>
+                <div className="text-xs font-medium text-gray-500 mb-2">Filter by follow-up</div>
                 <select
                   value={followUpFilter}
                   onChange={(e) => setFollowUpFilter(e.target.value as "all" | "needs" | "no")}
@@ -405,16 +385,11 @@ export default function AvailableJobsPage() {
                         km
                       </p>
                     )}
-                    {/* Optional: show follow-up badge to admins */}
+                    {/* Admin-only badge reflecting the new rule */}
                     {role === "admin" && (
                       <p className="text-xs">
                         Follow-up:{" "}
-                        <b>
-                          {((typeof j.follow_up === "boolean" ? j.follow_up : j.follow_up == 1) ||
-                            (j.progress_stage ?? "").toLowerCase().includes("cancelled"))
-                            ? "Yes"
-                            : "No"}
-                        </b>
+                        <b>{((j.progress_stage ?? "").toLowerCase() === "cancelled_in_delivery") ? "Yes" : "No"}</b>
                       </p>
                     )}
                   </div>
@@ -451,6 +426,6 @@ export default function AvailableJobsPage() {
           </div>
         )}
       </section>
-    </main >
+    </main>
   );
 }
