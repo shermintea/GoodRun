@@ -77,15 +77,27 @@ export default function AdminDashboard() {
           </Link>
 
           {/* Quick Actions */}
-          <div className="mt-8 grid grid-cols-2 gap-4 text-center">
+          <div className="mt-8 grid grid-cols-3 gap-3 text-center sm:gap-4">
             <QuickAction
-              label="My Profile"
-              href="/dashboard/profile"
+              label="Available Jobs"
+              href="/dashboard/availableJobs"
               icon={
                 <svg viewBox="0 0 24 24" className="h-6 w-6">
                   <path
                     fill="currentColor"
-                    d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.239-8 5v1h16v-1c0-2.761-3.58-5-8-5Z"
+                    d="M3 13h2v-2H3v2Zm4 0h14v-2H7v2Zm0 4h14v-2H7v2Zm0-8h14V7H7v2Z"
+                  />
+                </svg>
+              }
+            />
+            <QuickAction
+              label="Ongoing Jobs"
+              href="/dashboard/ongoingJobs"
+              icon={
+                <svg viewBox="0 0 24 24" className="h-6 w-6">
+                  <path
+                    fill="currentColor"
+                    d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 15h-2v-6h2Zm0-8h-2V7h2Z"
                   />
                 </svg>
               }
@@ -128,13 +140,6 @@ export default function AdminDashboard() {
               Manage Organisations
             </MenuButton>
 
-            <MenuButton href="/dashboard/availableJobs" variant="red">
-              Browse Available Jobs
-            </MenuButton>
-
-            <MenuButton href="/dashboard/ongoingJobs" variant="red">
-              View All Ongoing Jobs
-            </MenuButton>
           </div>
         </div>
       </section>
@@ -155,7 +160,7 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="group flex flex-col items-center gap-2 rounded-xl bg-white p-4 shadow-sm border border-gray-200 hover:border-gray-300 transition"
+      className="group flex flex-col items-center gap-3 rounded-xl bg-white p-3 shadow-sm border border-gray-300 hover:border-gray-300 transition"
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#11183A] text-white group-hover:opacity-90">
         {icon}
