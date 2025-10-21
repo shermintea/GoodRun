@@ -43,13 +43,17 @@ export async function GET() {
         j.intake_priority,
         j.size
       FROM ${JOBS_TABLE} j
-      WHERE j.progress_stage IN ($1, $2)
+      WHERE j.progress_stage = ANY($1::text[])
     `;
-    const params: any[] = allowed;
+    const params: any[] = [allowed];
+
+    console.log("GET /api/jobs/ongoing", { role, userId, params });
 
     if (role !== "admin") {
-      // volunteers only see THEIR ongoing jobs
-      sql += ` AND j.assigned_to = $3`;
+      if (!userId) {
+        return NextResponse.json({ jobs: [] }); // no user ID → no jobs
+      }
+      sql += ` AND j.assigned_to = $2`;
       params.push(userId);
     }
 

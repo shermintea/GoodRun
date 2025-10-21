@@ -66,7 +66,7 @@ export default function OngoingJobsPage() {
         if (status?.state === "granted") {
           navigator.geolocation.getCurrentPosition(
             (pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => {}
+            () => { }
           );
         }
       } catch {
@@ -135,9 +135,14 @@ export default function OngoingJobsPage() {
     try {
       const res = await fetch("/api/jobs/ongoing", { credentials: "include" });
       const data = await res.json();
+
       if (!res.ok) {
-        setError(data?.error || "Failed to load jobs");
-        setJobs([]);
+        if (res.status === 400 && data?.error === "No ongoing jobs") {
+          setJobs([]);
+        } else {
+          setError(data?.error || "Failed to load jobs");
+          setJobs([]);
+        }
       } else {
         // Expecting: [{...job, lat?, lng?}] – coords optional until backend provides them
         setJobs(Array.isArray(data.jobs) ? (data.jobs as JobRow[]) : []);
