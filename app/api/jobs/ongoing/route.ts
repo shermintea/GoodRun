@@ -12,38 +12,19 @@ import { authOptions } from "@/lib/utils/auth";
 import db from "@/lib/db";
 
 const JOBS_TABLE = (process.env.JOBS_TABLE || "jobs").trim();
-
-function rows(result: any): any[] {
-  // normalise pg/mysql wrappers
-  if (!result) return [];
-  if (Array.isArray(result?.rows)) return result.rows;
-  if (Array.isArray(result)) return result;
-  return [];
-}
+const USERS_TABLE = (process.env.USERS_TABLE || "users").trim();
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const role = (session.user as any)?.role as "admin" | "volunteer" | undefined;
-    const userId = (session.user as any)?.id;
-    if (!role) {
-      return NextResponse.json({ jobs: [] });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const allowed = ["reserved", "in_delivery"];
-    const params: any[] = [allowed];
-    let conditions: string[] = [`j.progress_stage = ANY($1::text[])`];
+    const role = (session.user as any)?.role;
+    const email = session.user?.email ?? null;
 
-    // Volunteers only see their own jobs
-    if (role !== "admin") {
-      if (!userId) return NextResponse.json({ jobs: [] });
-      conditions.push(`j.assigned_to = $2`);
-      params.push(userId);
-    }
-
+    // Base query
     let sql = `
       SELECT
         j.id,
@@ -54,9 +35,23 @@ export async function GET() {
         j.deadline_date,
         j.progress_stage,
         j.intake_priority,
-        j.size
+        j.size,
+        COALESCE(u.name, u.email) AS assignee_name,
+        u.email AS assignee_email
       FROM ${JOBS_TABLE} j
-      WHERE ${conditions.join(" AND ")}
+      LEFT JOIN ${USERS_TABLE} u ON u.id = j.assigned_to
+      WHERE j.progress_stage IN ('reserved', 'in_delivery')
+    `;
+
+    const params: any[] = [];
+
+    // Volunteer: only their own jobs
+    if (role !== "admin") {
+      params.push(email);
+      sql += ` AND u.email = $${params.length}`;
+    }
+
+    sql += `
       ORDER BY
         CASE j.progress_stage WHEN 'in_delivery' THEN 0 ELSE 1 END,
         COALESCE(j.deadline_date, '9999-12-31') ASC,
@@ -64,10 +59,12 @@ export async function GET() {
     `;
 
     const result = await db.query(sql, params);
-
-    return NextResponse.json({ jobs: rows(result) });
-  } catch (err) {
+    return NextResponse.json({ jobs: result.rows ?? [] });
+  } catch (err: any) {
     console.error("Error fetching ongoing jobs:", err);
-    return NextResponse.json({ error: "Failed to load ongoing jobs" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load ongoing jobs" },
+      { status: 500 }
+    );
   }
 }
