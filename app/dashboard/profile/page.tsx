@@ -18,6 +18,7 @@ import { useState } from "react";
 import Image from "next/image";
 import LogoutButton from "@/components/ui/LogoutButton";
 import EditProfileForm from "@/app/dashboard/profile/editProfileForm";
+import ChangePasswordForm from "@/app/dashboard/profile/editPasswordForm";
 import { useUserProfile } from "@/app/hooks/useUserProfile";
 import { Profile } from "@/types/profile";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,7 @@ function toDateOnly(value: unknown): string {
 export default function ProfilePage() {
   const { profile, loading, error, setProfile } = useUserProfile();
   const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const router = useRouter();
   const { update } = useSession(); // next-auth (optional)
 
@@ -169,8 +171,32 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Logout Button */}
-      <div className="mt-8">
+      {/* Password Change Form */}
+      {showPasswordForm && (
+        <div className="w-full max-w-lg mt-6">
+          {showPasswordForm && (
+            <div className="w-full max-w-lg mt-6 bg-white rounded-2xl shadow-sm p-6">
+              <div className="mb-3 text-base md:text-lg font-extrabold tracking-wide">
+                CHANGE PASSWORD
+              </div>
+              <ChangePasswordForm onCancel={() => setShowPasswordForm(false)} />
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* Change Password & Logout Button */}
+      <div className="mt-8 flex gap-4">
+        {!showPasswordForm && (
+          <button
+            onClick={() => setShowPasswordForm(true)}
+            className="rounded-full bg-red-600 px-4 py-2 text-white font-medium hover:bg-red-700 transition"
+          >
+            Change Password
+          </button>
+        )}
+
         <LogoutButton />
       </div>
     </main>
