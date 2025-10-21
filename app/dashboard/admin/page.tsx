@@ -113,11 +113,19 @@ export default function AdminDashboard() {
 
           <div className="space-y-4">
             <MenuButton href="/dashboard/admin/create-user" variant="dark">
-              Create New Users
+              Create New User
             </MenuButton>
 
             <MenuButton href="/dashboard/admin/manage-users" variant="dark">
               Manage Users
+            </MenuButton>
+
+            <MenuButton href="/dashboard/admin/create-org" variant="dark">
+              Create New Organisation
+            </MenuButton>
+
+            <MenuButton href="/dashboard/admin/manage-org" variant="dark">
+              Manage Organisations
             </MenuButton>
 
             <MenuButton href="/dashboard/availableJobs" variant="red">
