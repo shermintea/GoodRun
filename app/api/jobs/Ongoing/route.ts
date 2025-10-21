@@ -24,12 +24,25 @@ function rows(result: any): any[] {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const role = (session.user as any)?.role as "admin" | "volunteer" | undefined;
     const userId = (session.user as any)?.id;
+    if (!role) {
+      return NextResponse.json({ jobs: [] });
+    }
 
     const allowed = ["reserved", "in_delivery"];
+    const params: any[] = [allowed];
+    let conditions: string[] = [`j.progress_stage = ANY($1::text[])`];
+
+    // Volunteers only see their own jobs
+    if (role !== "admin") {
+      if (!userId) return NextResponse.json({ jobs: [] });
+      conditions.push(`j.assigned_to = $2`);
+      params.push(userId);
+    }
 
     let sql = `
       SELECT
@@ -43,26 +56,15 @@ export async function GET() {
         j.intake_priority,
         j.size
       FROM ${JOBS_TABLE} j
-      WHERE j.progress_stage = ANY($1::text[])
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY
+        CASE j.progress_stage WHEN 'in_delivery' THEN 0 ELSE 1 END,
+        COALESCE(j.deadline_date, '9999-12-31') ASC,
+        j.id DESC
     `;
-    const params: any[] = [allowed];
-
-    console.log("GET /api/jobs/ongoing", { role, userId, params });
-
-    if (role !== "admin") {
-      if (!userId) {
-        return NextResponse.json({ jobs: [] }); // no user ID → no jobs
-      }
-      sql += ` AND j.assigned_to = $2`;
-      params.push(userId);
-    }
-
-    sql += ` ORDER BY 
-       CASE j.progress_stage WHEN 'in_delivery' THEN 0 ELSE 1 END,
-       COALESCE(j.deadline_date, '9999-12-31') ASC,
-       j.id DESC`;
 
     const result = await db.query(sql, params);
+
     return NextResponse.json({ jobs: rows(result) });
   } catch (err) {
     console.error("Error fetching ongoing jobs:", err);
