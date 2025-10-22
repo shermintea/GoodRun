@@ -13,6 +13,7 @@
 *******************************************************/
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -151,13 +152,12 @@ export default function ManageUsersPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-semibold">Manage Users</h1>
         <div className="flex gap-3">
-          <button
-            type="button"
-            className="px-4 py-2 rounded border"
-            onClick={() => router.push("/dashboard/admin")}
+          <Link
+            href="/dashboard/admin"
+            className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
           >
             Back to Admin
-          </button>
+          </Link>
           {canManage && (
             <button
               type="button"
@@ -224,9 +224,8 @@ export default function ManageUsersPage() {
                 <div className="font-medium text-gray-700">Created By</div>
                 <div>
                   {u.createdByName
-                    ? `${u.createdByName}${
-                        u.createdByEmail ? ` (${u.createdByEmail})` : ""
-                      }`
+                    ? `${u.createdByName}${u.createdByEmail ? ` (${u.createdByEmail})` : ""
+                    }`
                     : "—"}
                 </div>
               </div>
@@ -293,9 +292,8 @@ export default function ManageUsersPage() {
                   </td>
                   <td className="py-3 px-4 text-gray-700">
                     {u.createdByName
-                      ? `${u.createdByName}${
-                          u.createdByEmail ? ` (${u.createdByEmail})` : ""
-                        }`
+                      ? `${u.createdByName}${u.createdByEmail ? ` (${u.createdByEmail})` : ""
+                      }`
                       : "—"}
                   </td>
                   <td className="py-3 px-4">

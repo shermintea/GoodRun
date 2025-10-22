@@ -77,10 +77,11 @@ export default function CreateOrgPage() {
                     <h1 className="text-2xl font-extrabold tracking-tight">Create New Organisation</h1>
                     <Link
                         href="/dashboard/admin"
-                        className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+                        className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 whitespace-nowrap"
                     >
                         Back to Admin
                     </Link>
+
                 </div>
 
                 <form

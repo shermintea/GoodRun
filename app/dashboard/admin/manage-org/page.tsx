@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 type OrgRow = {
     id: number;
@@ -122,13 +123,12 @@ export default function ManageOrganisationsPage() {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-semibold">Manage Organisations</h1>
                 <div className="flex gap-3">
-                    <button
-                        type="button"
-                        className="px-4 py-2 rounded border"
-                        onClick={() => router.push("/dashboard/admin")}
+                    <Link
+                        href="/dashboard/admin"
+                        className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
                     >
                         Back to Admin
-                    </button>
+                    </Link>
                     {canManage && (
                         <button
                             type="button"

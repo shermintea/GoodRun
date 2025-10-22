@@ -409,7 +409,6 @@ export default function AvailableJobsPage() {
         <div className="h-[100px] rounded-lg bg-red-700 p-6 shadow-sm text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold">Available Jobs</h1>
-            <span className="text-xs bg-white/20 px-2 py-1 rounded">Role: {role ?? "…"}</span>
           </div>
           <button
             type="button"
@@ -417,7 +416,7 @@ export default function AvailableJobsPage() {
             disabled={refreshing}
             className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-medium px-4 py-2 rounded-lg transition disabled:opacity-60"
           >
-            {refreshing ? "Refreshing…" : "Refresh Jobs"}
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
 
