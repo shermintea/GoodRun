@@ -335,7 +335,10 @@ export default function JobDetail({ id }: { id: string }) {
       <div className="rounded-lg bg-white p-4 border shadow-sm">
         <h3 className="mb-3 text-lg font-semibold">Route preview</h3>
         {coords ? (
-          <JobMapView jobLocation={coords} />
+          <JobMapView 
+            jobLocation={coords}
+            progressStage={form.progress_stage}
+            />
         ) : (
           <div className="h-[320px] flex items-center justify-center text-gray-600 border border-dashed rounded text-center px-4">
             {geoError
@@ -505,7 +508,11 @@ export default function JobDetail({ id }: { id: string }) {
         {error && <div className="rounded border bg-red-50 text-red-700 px-3 py-2">{error}</div>}
 
         <div className="flex justify-between">
-          <a href="/dashboard/availableJobs" className="rounded border px-4 py-2 hover:bg-gray-50">
+        
+          <a
+            href={form.progress_stage === "available" ? "/dashboard/availableJobs" : "/dashboard/ongoingJobs"}
+            className="rounded border px-4 py-2 hover:bg-gray-50"
+          >
             ← Back
           </a>
 
