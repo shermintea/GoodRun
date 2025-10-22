@@ -33,6 +33,7 @@ export default function JobHistoryPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isAdmin = (session?.user as any)?.role === "admin";
 
@@ -40,6 +41,7 @@ export default function JobHistoryPage() {
     try {
       setLoading(true);
       setError(null);
+      setRefreshing(true);
 
       const res = await fetch("/api/jobs/completed", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load completed jobs");
@@ -49,6 +51,7 @@ export default function JobHistoryPage() {
       setError(e?.message || "Error loading completed jobs.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -59,14 +62,15 @@ export default function JobHistoryPage() {
 
   return (
     <div className="p-8">
-      {/* Header Bar */}
-      <div className="bg-[#b51c1c] text-white rounded-t-2xl flex justify-between items-center p-6">
-        <h1 className="text-xl font-semibold">Completed Jobs (Job History)</h1>
+      {/* Header */}
+      <div className="h-[100px] rounded-lg bg-red-700 p-6 shadow-sm text-white flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Ongoing Jobs</h1>
         <button
           onClick={fetchCompletedJobs}
-          className="bg-white text-[#b51c1c] px-4 py-2 rounded-md font-medium hover:bg-gray-100 transition"
+          disabled={refreshing}
+          className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-medium px-4 py-2 rounded-lg transition disabled:opacity-60"
         >
-          Refresh
+          {refreshing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 

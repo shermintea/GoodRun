@@ -219,7 +219,7 @@ export default function OngoingJobsPage() {
             disabled={refreshing}
             className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-medium px-4 py-2 rounded-lg transition disabled:opacity-60"
           >
-            {refreshing ? "Refreshing…" : "Refresh Jobs"}
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
 
