@@ -23,15 +23,27 @@ import L from "leaflet";
 import { getGraphHopperRoute } from "@/lib/services/graphhopper";
 
 // fix default marker icons
-import iconUrl from "leaflet/dist/images/marker-icon.png";
+/* import iconUrl from "leaflet/dist/images/marker-icon.png";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 
 L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
+ */
+
+delete (L.Icon.Default as any).prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+  iconUrl: require("leaflet/dist/images/marker-icon.png"),
+  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
+});
+
 
 interface JobMapViewProps {
   jobLocation: { lat: number; lng: number };
+  progressStage?: string;
 }
+
+const warehouseLocation = { lat: -37.81649, lng:144.81595};
 
 // custom SVG job marker
 const jobSvgIcon = L.divIcon({
@@ -49,20 +61,20 @@ const jobSvgIcon = L.divIcon({
 
 const FitBounds = ({
   userLocation,
-  jobLocation,
+  targetLocation,
 }: {
   userLocation: { lat: number; lng: number };
-  jobLocation: { lat: number; lng: number };
+  targetLocation: { lat: number; lng: number };
 }) => {
   const map = useMap();
   useEffect(() => {
-    const bounds = L.latLngBounds([userLocation, jobLocation]);
+    const bounds = L.latLngBounds([userLocation, targetLocation]);
     map.fitBounds(bounds, { padding: [50, 50] });
-  }, [map, userLocation, jobLocation]);
+  }, [map, userLocation, targetLocation]);
   return null;
 };
 
-export default function JobMapView({ jobLocation }: JobMapViewProps) {
+export default function JobMapView({ jobLocation, progressStage }: JobMapViewProps) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [route, setRoute] = useState<[number, number][]>([]);
 
@@ -78,8 +90,12 @@ export default function JobMapView({ jobLocation }: JobMapViewProps) {
   useEffect(() => {
     const fetchRoute = async () => {
       if (!userLocation) return;
+
+      const targetLocation=
+        progressStage === "in_delivery" ? warehouseLocation : jobLocation;
+
       try {
-        const coords = await getGraphHopperRoute(userLocation, jobLocation);
+        const coords = await getGraphHopperRoute(userLocation, targetLocation);
         setRoute(Array.isArray(coords) ? coords : []);
       } catch (error) {
         console.error("Error fetching GraphHopper route:", error);
@@ -87,7 +103,7 @@ export default function JobMapView({ jobLocation }: JobMapViewProps) {
       }
     };
     fetchRoute();
-  }, [userLocation, jobLocation]);
+  }, [userLocation, jobLocation, progressStage]);
 
   if (!userLocation) {
     return (
@@ -96,6 +112,9 @@ export default function JobMapView({ jobLocation }: JobMapViewProps) {
       </div>
     );
   }
+
+  const targetLocation =
+    progressStage === "in_delivery" ? warehouseLocation : jobLocation;
 
   return (
     <MapContainer
@@ -112,13 +131,20 @@ export default function JobMapView({ jobLocation }: JobMapViewProps) {
         <Popup>You are here !</Popup>
       </Marker>
 
-      <Marker position={[jobLocation.lat, jobLocation.lng]} icon={jobSvgIcon}>
-        <Popup>Job Location</Popup>
-      </Marker>
+      {progressStage == "in_delivery" ? (
+        <Marker position={warehouseLocation} icon={jobSvgIcon}>
+          <Popup>Warehouse</Popup>
+        </Marker>
+      ) : (
+        <Marker position={jobLocation} icon={jobSvgIcon}>
+          <Popup>Job Location</Popup>
+        </Marker>
+      )}
+
 
       {route.length > 0 && <Polyline positions={route} weight={4} />}
 
-      <FitBounds userLocation={userLocation} jobLocation={jobLocation} />
+      <FitBounds userLocation={userLocation} targetLocation={targetLocation} />
     </MapContainer>
   );
 }
