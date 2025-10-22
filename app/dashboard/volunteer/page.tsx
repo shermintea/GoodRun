@@ -77,9 +77,6 @@ export default async function DashboardPage() {
                 </>
               ) : (
                 <>
-                  <p className="mt-2 text-sm text-white/90">
-                    No active jobs at the moment.
-                  </p>
                   <a
                     href="/dashboard/ongoingJobs"
                     className="mt-4 inline-block rounded-md bg-white/95 px-4 py-2 text-[#171e3a] font-medium text-center hover:bg-white"
@@ -122,8 +119,8 @@ export default async function DashboardPage() {
           {/* Map placeholder */}
           <div className="md:col-span-2">
             <div className="h-[400px] w-full rounded-lg border border-gray-200 overflow-hidden">
-              <MapView showUserLocation={true}/>
-              
+              <MapView showUserLocation={true} />
+
             </div>
           </div>
         </div>
