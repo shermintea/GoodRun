@@ -7,7 +7,7 @@
 * Purpose:   - Display currently accepted jobs
 *            - Confirm Pickup / Drop-off transitions for volunteers
 *            - Manual refresh, role-aware UI, safe feedback messages
-*            - Distance-based filter/sort (GPS) + optional priority sort
+*            - Distance-based filter/sort + optional priority sort + filter by package size
 ******************************************************************************************/
 
 "use client";
@@ -17,6 +17,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 type Priority = "low" | "medium" | "high";
+type PkgSize = "tiny" | "small" | "medium" | "large";
 
 type JobRow = {
   id: number;
@@ -27,11 +28,11 @@ type JobRow = {
   deadline_date: string;
   progress_stage: string;
   intake_priority: Priority | string;
-  size?: string | null;
+  size?: string | null;          // <- may be "tiny" | "small" | "medium" | "large" | mixed casing
 
-  // OPTIONAL coords; included to enable distance filter/sort when backend provides them
-  lat?: number | null;
-  lng?: number | null;
+  // OPTIONAL coords; backend may provide for distance features
+  lat?: number | string | null;
+  lng?: number | string | null;
 };
 
 function fmtDate(d: string | null | undefined) {
@@ -39,6 +40,42 @@ function fmtDate(d: string | null | undefined) {
   const x = new Date(d);
   if (isNaN(x.getTime())) return d;
   return x.toLocaleDateString();
+}
+
+// ----- distance helpers -----
+const toRad = (x: number) => (x * Math.PI) / 180;
+const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+const priorityRank = (p: Priority | string) => {
+  const v = String(p).toLowerCase();
+  return v === "high" ? 3 : v === "medium" ? 2 : 1;
+};
+
+// ----- package size helpers (mirrors Available Jobs) -----
+function normalizeSize(raw: string | null | undefined): PkgSize | null {
+  if (!raw) return null;
+  const v = String(raw).trim().toLowerCase();
+  if (v.startsWith("tiny")) return "tiny";
+  if (v.startsWith("small") || v === "s") return "small";
+  if (v.startsWith("medium") || v === "m") return "medium";
+  if (v.startsWith("large") || v === "l") return "large";
+  return null;
+}
+function sizeLabel(raw: string | null | undefined) {
+  const n = normalizeSize(raw);
+  return n ? n[0].toUpperCase() + n.slice(1) : (raw ?? "—");
+}
+function parseNum(n: unknown): number | null {
+  if (n == null) return null;
+  const v = typeof n === "string" ? parseFloat(n) : (n as number);
+  return Number.isFinite(v) ? v : null;
 }
 
 export default function OngoingJobsPage() {
@@ -51,14 +88,17 @@ export default function OngoingJobsPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
-  // ---------- New: filter/sort state ----------
+  // ---------- existing controls ----------
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState<number>(10);
-  const [applyRadius, setApplyRadius] = useState<boolean>(true);
+  const [applyRadius, setApplyRadius] = useState<boolean>(true); // do not change behavior
   const [sortOrder, setSortOrder] = useState<"nearest" | "farthest">("nearest");
   const [prioritySort, setPrioritySort] = useState<"none" | "highFirst" | "lowFirst">("none");
 
-  // Auto-use geolocation if permission is already granted
+  // ---------- NEW: package size filter ----------
+  const [packageSizeFilter, setPackageSizeFilter] = useState<"all" | PkgSize>("all");
+
+  // Auto-use geolocation if permission is already granted (unchanged)
   useEffect(() => {
     const tryAutoGeo = async () => {
       try {
@@ -76,47 +116,41 @@ export default function OngoingJobsPage() {
     tryAutoGeo();
   }, []);
 
-  // Distance helpers
-  const toRad = (x: number) => (x * Math.PI) / 180;
-  const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
-    const R = 6371;
-    const dLat = toRad(b.lat - a.lat);
-    const dLng = toRad(b.lng - a.lng);
-    const lat1 = toRad(a.lat);
-    const lat2 = toRad(b.lat);
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(h));
-  };
-  const priorityRank = (p: Priority | string) => (String(p).toLowerCase() === "high" ? 3 : String(p).toLowerCase() === "medium" ? 2 : 1);
-
   // ---------- Compute filtered/sorted list ----------
   const displayed = useMemo(() => {
     let list = jobs.map((j) => {
-      const has = typeof j.lat === "number" && typeof j.lng === "number";
-      const distanceKm = userLoc && has ? haversineKm(userLoc, { lat: j.lat!, lng: j.lng! }) : null;
-      return { ...j, distanceKm };
+      const lat = parseNum(j.lat);
+      const lng = parseNum(j.lng);
+      const has = lat != null && lng != null;
+      const distanceKm = userLoc && has ? haversineKm(userLoc, { lat, lng }) : null;
+      return { ...j, distanceKm, _normSize: normalizeSize(j.size) };
     });
 
-    // Limit to radius (optional). Unknown-distance stays visible.
+    // Package size filter (unknown/missing included only when "All sizes")
+    if (packageSizeFilter !== "all") {
+      list = list.filter((j: any) => j._normSize === packageSizeFilter);
+    }
+
+    // Limit to radius (unchanged behavior)
     if (userLoc && applyRadius) {
       list = list.filter((j: any) => (j.distanceKm == null ? true : j.distanceKm <= radiusKm));
     }
 
     // Sort by priority (optional)
     if (prioritySort !== "none") {
-      list.sort((a, b) => {
+      list.sort((a: any, b: any) => {
         const diff = priorityRank(b.intake_priority) - priorityRank(a.intake_priority); // high -> low
         return prioritySort === "highFirst" ? diff : -diff; // low -> high
       });
     }
 
-    // Sort by distance: known first; then nearest/farthest
+    // Sort by distance: known first; then nearest/farthest (unchanged)
     if (userLoc) {
       list.sort((a: any, b: any) => {
-        const da = a.distanceKm,
-          db = b.distanceKm;
-        const aKnown = da != null,
-          bKnown = db != null;
+        const da = a.distanceKm as number | null;
+        const db = b.distanceKm as number | null;
+        const aKnown = da != null && Number.isFinite(da);
+        const bKnown = db != null && Number.isFinite(db);
         if (aKnown && !bKnown) return -1;
         if (!aKnown && bKnown) return 1;
         if (!aKnown && !bKnown) return 0;
@@ -125,15 +159,15 @@ export default function OngoingJobsPage() {
     }
 
     return list;
-  }, [jobs, userLoc, radiusKm, applyRadius, sortOrder, prioritySort]);
+  }, [jobs, userLoc, radiusKm, applyRadius, sortOrder, prioritySort, packageSizeFilter]);
 
-  // Load all ongoing jobs
+  // Load all ongoing jobs (unchanged, with numeric coercion for coords)
   const load = async () => {
     setRefreshing(true);
     setError(null);
     setActionMsg(null);
     try {
-      const res = await fetch("/api/jobs/ongoing", { credentials: "include" });
+      const res = await fetch("/api/jobs/ongoing", { credentials: "include", cache: "no-store" });
       const data = await res.json();
 
       if (!res.ok) {
@@ -144,8 +178,13 @@ export default function OngoingJobsPage() {
           setJobs([]);
         }
       } else {
-        // Expecting: [{...job, lat?, lng?}] – coords optional until backend provides them
-        setJobs(Array.isArray(data.jobs) ? (data.jobs as JobRow[]) : []);
+        const rows = (Array.isArray(data.jobs) ? (data.jobs as JobRow[]) : []).map((j) => ({
+          ...j,
+          lat: parseNum(j.lat),
+          lng: parseNum(j.lng),
+          size: j.size ?? (j as any).package_size ?? j.size, // accept size either way
+        }));
+        setJobs(rows);
       }
     } catch {
       setError("Network error while loading jobs");
@@ -161,7 +200,7 @@ export default function OngoingJobsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Volunteer actions: pick-up or drop-off confirmations
+  // Volunteer actions (unchanged)
   const updateProgress = async (id: number, nextStage: string) => {
     try {
       const res = await fetch(`/api/jobs/${id}/update`, {
@@ -223,9 +262,9 @@ export default function OngoingJobsPage() {
           </button>
         </div>
 
-        {/* -------- Controls: distance + sort -------- */}
+        {/* -------- Controls: distance + priority + size -------- */}
         <div className="rounded-xl bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
             {/* Distance */}
             <div className="rounded-lg border p-3">
               <div className="text-xs font-medium text-gray-500 mb-2">Distance (km)</div>
@@ -273,7 +312,7 @@ export default function OngoingJobsPage() {
               </select>
             </div>
 
-            {/* Sort by priority (optional) */}
+            {/* Sort by priority */}
             <div className="rounded-lg border p-3">
               <div className="text-xs font-medium text-gray-500 mb-2">Sort by priority</div>
               <select
@@ -285,6 +324,23 @@ export default function OngoingJobsPage() {
                 <option value="none">None</option>
                 <option value="highFirst">Highest first</option>
                 <option value="lowFirst">Lowest first</option>
+              </select>
+            </div>
+
+            {/* NEW: Filter by package size */}
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-medium text-gray-500 mb-2">Filter by package size</div>
+              <select
+                value={packageSizeFilter}
+                onChange={(e) => setPackageSizeFilter(e.target.value as "all" | PkgSize)}
+                className="w-full rounded-md border px-3 py-2 text-sm"
+                aria-label="Filter by package size"
+              >
+                <option value="all">All sizes</option>
+                <option value="tiny">Tiny</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
               </select>
             </div>
           </div>
@@ -319,7 +375,6 @@ export default function OngoingJobsPage() {
                     {j.name ?? `Job #${j.id}`}
                   </h2>
                   <div className="flex items-center gap-2">
-                    {/* Optional distance chip */}
                     {j.distanceKm != null && userLoc && (
                       <span className="text-xs rounded-full px-2 py-1 bg-sky-100 text-sky-700">
                         {j.distanceKm.toFixed(1)} km
@@ -331,25 +386,19 @@ export default function OngoingJobsPage() {
                   </div>
                 </div>
 
-                {/* Role-specific fields */}
-                {role === "admin" ? (
-                  <div className="mt-3 text-sm text-gray-700 space-y-1">
-                    <p><span className="font-medium">Assigned to:</span> {j.assigned_to ?? "—"}</p>
-                    <p><span className="font-medium">Follow-up required:</span> {j.follow_up ? "Yes" : "No"}</p>
-                    <p><span className="font-medium">Deadline:</span> {fmtDate(j.deadline_date)}</p>
-                    <p><span className="font-medium">Status:</span> {j.progress_stage}</p>
-                    <p><span className="font-medium">Priority:</span> {String(j.intake_priority).toLowerCase()}</p>
-                  </div>
-                ) : (
-                  <div className="mt-3 text-sm text-gray-700 space-y-1">
-                    <p><span className="font-medium">Deadline:</span> {fmtDate(j.deadline_date)}</p>
-                    <p><span className="font-medium">Priority:</span> {String(j.intake_priority).toLowerCase()}</p>
-                    <p><span className="font-medium">Status:</span> {j.progress_stage}</p>
-                    <p><span className="font-medium">Address:</span> {j.address ?? "—"}</p>
-                  </div>
-                )}
+                <div className="mt-3 text-sm text-gray-700 space-y-1">
+                  <p><span className="font-medium">Deadline:</span> {fmtDate(j.deadline_date)}</p>
+                  <p><span className="font-medium">Priority:</span> {String(j.intake_priority).toLowerCase()}</p>
+                  <p><span className="font-medium">Size:</span> {sizeLabel(j.size)}</p>
+                  <p><span className="font-medium">Address:</span> {j.address ?? "—"}</p>
+                  {role === "admin" && (
+                    <>
+                      <p><span className="font-medium">Assigned to:</span> {j.assigned_to ?? "—"}</p>
+                      <p><span className="font-medium">Follow-up required:</span> {j.follow_up ? "Yes" : "No"}</p>
+                    </>
+                  )}
+                </div>
 
-                {/* Buttons */}
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <Link
                     href={`/dashboard/job/${j.id}`}
@@ -358,7 +407,6 @@ export default function OngoingJobsPage() {
                     View Details
                   </Link>
 
-                  {/* Volunteer action buttons */}
                   {role === "volunteer" && j.progress_stage === "reserved" && (
                     <button
                       onClick={() => updateProgress(j.id, "in_delivery")}
