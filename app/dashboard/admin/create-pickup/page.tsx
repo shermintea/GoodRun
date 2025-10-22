@@ -13,8 +13,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Select from "react-select";
 
 type FormData = {
   jobName: string;
@@ -42,6 +43,9 @@ export default function CreatePickupPage() {
     deadlineDate: "",
     followUp: false,
   });
+
+  const [orgOptions, setOrgOptions] = useState<{ value: string; label: string }[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -152,178 +156,233 @@ export default function CreatePickupPage() {
     }
   };
 
+  /* Handles organisation input */
+  const fetchOrganisations = useCallback(async (query: string) => {
+    try {
+      const res = await fetch(`/api/org?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.ok) {
+        setOrgOptions(
+          data.organisations.map((org: any) => ({
+            value: org.name,
+            label: org.name,
+          }))
+        );
+      } else {
+        setOrgOptions([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch organisations:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      // Fetch all orgs when empty search, or filter by query
+      fetchOrganisations(searchTerm || "");
+    }, 400);
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm, fetchOrganisations]);
+
+  useEffect(() => {
+    fetchOrganisations(""); // initial fetch for all orgs
+  }, [fetchOrganisations]);
+
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm mt-6">
-      <h1 className="text-2xl font-semibold text-red-700 mb-4">
-        Create New Pick-Up Request
-      </h1>
+    <div className="min-h-screen bg-gray-100 flex justify-center items-start pt-12 px-4">
+      <div className="w-full max-w-3xl bg-white p-6 rounded-xl shadow-sm">
+        <h1 className="text-2xl font-semibold text-red-700 mb-6">
+          Create New Pick-Up Request
+        </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Job Name */}
-        <div>
-          <label className="font-medium">Job Name</label>
-          <input
-            type="text"
-            name="jobName"
-            value={form.jobName}
-            onChange={handleFieldChange}
-            className="w-full border rounded p-2"
-            placeholder="e.g. Helping Hands – Flemington pickup"
-          />
-          <p className="text-xs text-gray-500">
-            A short label for this job (for admins and volunteers).
-          </p>
-        </div>
-
-        {/* Organisation Name */}
-        <div>
-          <label className="font-medium">Organisation Name</label>
-          <input
-            type="text"
-            name="organisationName"
-            value={form.organisationName}
-            onChange={handleFieldChange}
-            className="w-full border rounded p-2"
-            placeholder="e.g. Helping Hands"
-            required
-          />
-          <p className="text-xs text-gray-500">
-            Must match an existing organisation record.
-          </p>
-        </div>
-
-        {/* Pick-up Address */}
-        <div>
-          <label className="font-medium">Pick-up Address (max 200 chars)</label>
-          <textarea
-            name="address"
-            value={form.address}
-            onChange={handleFieldChange}
-            maxLength={200}
-            className="w-full border rounded p-2"
-            placeholder="e.g. 5 Victoria Street, Flemington"
-            required
-          />
-          <p className="text-xs text-gray-500">
-            This is the pick-up location — it doesn’t have to match the organisation’s address.
-          </p>
-        </div>
-
-        {/* Weight & Value */}
-        <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Job Name */}
           <div>
-            <label className="font-medium">Weight (kg)</label>
+            <label className="font-medium">Job Name</label>
             <input
-              type="number"
-              name="weight"
-              value={form.weight}
+              type="text"
+              name="jobName"
+              value={form.jobName}
               onChange={handleFieldChange}
               className="w-full border rounded p-2"
-              required
-              min="0"
-              step="0.1"
+              placeholder="e.g. Helping Hands – Flemington pickup"
             />
+            <p className="text-xs text-gray-500">
+              A short label for this job (for admins and volunteers).
+            </p>
           </div>
-          <div>
-            <label className="font-medium">Value ($)</label>
-            <input
-              type="number"
-              name="value"
-              value={form.value}
-              onChange={handleFieldChange}
-              className="w-full border rounded p-2"
-              required
-              min="0"
-              step="1"
-            />
-          </div>
-        </div>
 
-        {/* Size & Priority */}
-        <div className="grid grid-cols-2 gap-4">
+          {/* Organisation Name */}
           <div>
-            <label className="font-medium">Package Size</label>
-            <select
-              name="size"
-              value={form.size}
+            <label className="font-medium">Organisation Name</label>
+            <Select
+              placeholder="Search or select organisation..."
+              isSearchable
+              isClearable
+              value={
+                form.organisationName
+                  ? { value: form.organisationName, label: form.organisationName }
+                  : null
+              }
+              onInputChange={(inputValue) => {
+                setSearchTerm(inputValue || "");
+                return inputValue;
+              }}
+              onChange={(selected) => {
+                setForm((prev) => ({
+                  ...prev,
+                  organisationName: selected ? selected.value : "",
+                }));
+              }}
+              options={orgOptions}
+              className="text-sm"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderColor: "#d1d5db",
+                  boxShadow: "none",
+                  "&:hover": { borderColor: "#9ca3af" },
+                }),
+              }}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Select from existing organisations (searchable).
+            </p>
+          </div>
+
+          {/* Pick-up Address */}
+          <div>
+            <label className="font-medium">Pick-up Address (max 200 chars)</label>
+            <textarea
+              name="address"
+              value={form.address}
               onChange={handleFieldChange}
+              maxLength={200}
               className="w-full border rounded p-2"
+              placeholder="e.g. 5 Victoria Street, Flemington"
+              required
+            />
+            <p className="text-xs text-gray-500">
+              This is the pick-up location — it doesn’t have to match the organisation’s address.
+            </p>
+          </div>
+
+          {/* Weight & Value */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="font-medium">Weight (kg)</label>
+              <input
+                type="number"
+                name="weight"
+                value={form.weight}
+                onChange={handleFieldChange}
+                className="w-full border rounded p-2"
+                required
+                min="0"
+                step="0.1"
+              />
+            </div>
+            <div>
+              <label className="font-medium">Value ($)</label>
+              <input
+                type="number"
+                name="value"
+                value={form.value}
+                onChange={handleFieldChange}
+                className="w-full border rounded p-2"
+                required
+                min="0"
+                step="1"
+              />
+            </div>
+          </div>
+
+          {/* Size & Priority */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="font-medium">Package Size</label>
+              <select
+                name="size"
+                value={form.size}
+                onChange={handleFieldChange}
+                className="w-full border rounded p-2"
+              >
+                <option>Tiny</option>
+                <option>Small</option>
+                <option>Medium</option>
+                <option>Large</option>
+              </select>
+            </div>
+            <div>
+              <label className="font-medium">Intake Priority</label>
+              <select
+                name="intakePriority"
+                value={form.intakePriority}
+                onChange={handleFieldChange}
+                className="w-full border rounded p-2"
+              >
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Deadline & Follow-up */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="font-medium">Deadline Date</label>
+              <input
+                type="date"
+                name="deadlineDate"
+                value={form.deadlineDate}
+                onChange={handleFieldChange}
+                className="w-full border rounded p-2"
+                required
+              />
+            </div>
+            <div className="flex items-center space-x-2 mt-7">
+              <input
+                id="followUp"
+                type="checkbox"
+                name="followUp"
+                checked={form.followUp}
+                onChange={handleCheckboxChange}
+              />
+              <label htmlFor="followUp">Follow-up Required</label>
+            </div>
+          </div>
+
+          {/* Messages */}
+          {error && (
+            <div className="border border-red-300 bg-red-50 text-red-700 p-2 rounded">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="border border-green-300 bg-green-50 text-green-700 p-2 rounded">
+              {success}
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
             >
-              <option>Tiny</option>
-              <option>Small</option>
-              <option>Medium</option>
-              <option>Large</option>
-            </select>
-          </div>
-          <div>
-            <label className="font-medium">Intake Priority</label>
-            <select
-              name="intakePriority"
-              value={form.intakePriority}
-              onChange={handleFieldChange}
-              className="w-full border rounded p-2"
+              Add Job
+            </button>
+            <button
+              type="button"
+              className="bg-gray-200 px-4 py-2 rounded"
+              onClick={() => router.push("/dashboard/admin")}
             >
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-            </select>
+              Back to Admin
+            </button>
           </div>
-        </div>
-
-        {/* Deadline & Follow-up */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="font-medium">Deadline Date</label>
-            <input
-              type="date"
-              name="deadlineDate"
-              value={form.deadlineDate}
-              onChange={handleFieldChange}
-              className="w-full border rounded p-2"
-              required
-            />
-          </div>
-          <div className="flex items-center space-x-2 mt-7">
-            <input
-              id="followUp"
-              type="checkbox"
-              name="followUp"
-              checked={form.followUp}
-              onChange={handleCheckboxChange}
-            />
-            <label htmlFor="followUp">Follow-up Required</label>
-          </div>
-        </div>
-
-        {/* Messages */}
-        {error && (
-          <div className="border border-red-300 bg-red-50 text-red-700 p-2 rounded">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="border border-green-300 bg-green-50 text-green-700 p-2 rounded">
-            {success}
-          </div>
-        )}
-
-        {/* Buttons */}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
-          >
-            Add Job
-          </button>
-          <button
-            type="button"
-            className="bg-gray-200 px-4 py-2 rounded"
-            onClick={() => router.push("/dashboard/admin")}
-          >
-            Back to Admin
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
