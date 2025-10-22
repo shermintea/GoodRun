@@ -126,7 +126,7 @@ export default function OngoingJobsPage() {
       return { ...j, distanceKm, _normSize: normalizeSize(j.size) };
     });
 
-    // Package size filter (unknown/missing included only when "All sizes")
+    // Package size filter (unknown/missing included only when "None")
     if (packageSizeFilter !== "all") {
       list = list.filter((j: any) => j._normSize === packageSizeFilter);
     }
@@ -336,7 +336,7 @@ export default function OngoingJobsPage() {
                 className="w-full rounded-md border px-3 py-2 text-sm"
                 aria-label="Filter by package size"
               >
-                <option value="all">All sizes</option>
+                <option value="all">None</option>
                 <option value="tiny">Tiny</option>
                 <option value="small">Small</option>
                 <option value="medium">Medium</option>
