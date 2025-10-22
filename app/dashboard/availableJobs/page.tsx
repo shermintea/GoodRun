@@ -3,20 +3,22 @@
 * File:      availableJobs/page.tsx
 * Author:    IT Project – Medical Pantry – Group 17
 * Date:      24-09-2025
-* Version:   1.4
+* Version:   1.6
 * Purpose:   Dashboard where volunteers can see all available
 *            jobs, consisting of a header with GoodRun logo on
 *            the left, Dashboard + Profile buttons on the right,
 *            and a scrollable list of jobs.
-*            + Filter/sort by distance (GPS)
+*            + Various filter and sort by features
 * Revisions:
 * v1.0 - Initial page layout (front end)
 * v1.1 - Updated header to use GoodRun branding
 * v1.2 - Added Dashboard shortcut and replaced logo
 * v1.3 - Moved page to dashboard/availableJobs, replaced with reusable header
 * v1.4 - Added distance-based filter, sorting with GPS and add the sort-by dropdown.
-
+* v1.5 - Added follow-up filter and sort by urgency
+* v1.6 - Added package size filter 
 *******************************************************/
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -25,6 +27,7 @@ import { useSession } from "next-auth/react";
 
 type Role = "admin" | "volunteer" | undefined;
 type Urgency = "LOW" | "MEDIUM" | "HIGH";
+type PkgSize = "tiny" | "small" | "medium" | "large";
 
 type JobRow = {
   id: number;
@@ -87,6 +90,17 @@ const urgencyBadge = (u: Urgency | null) =>
         ? { text: "Low", classes: "bg-sky-100 text-sky-700" }
         : { text: "—", classes: "bg-gray-100 text-gray-500" };
 
+// --- new: package size helpers ---
+const normalizeSize = (raw: string | null | undefined): PkgSize | null => {
+  if (!raw) return null;
+  const v = String(raw).trim().toLowerCase();
+  if (v.startsWith("tiny")) return "tiny";
+  if (v.startsWith("small") || v === "s") return "small";
+  if (v.startsWith("medium") || v === "m") return "medium";
+  if (v.startsWith("large") || v === "l") return "large";
+  return null;
+};
+
 // fetch just what we need from job details
 async function fetchJobIntakePriority(id: number): Promise<string | null> {
   try {
@@ -96,6 +110,25 @@ async function fetchJobIntakePriority(id: number): Promise<string | null> {
     const job = d?.job ?? d;
     const ip = job?.intake_priority;
     return ip == null ? null : String(ip);
+  } catch {
+    return null;
+  }
+}
+
+// new: fetch follow_up + package_size (and intake as backup)
+async function fetchJobDetails(
+  id: number
+): Promise<{ follow_up?: boolean | 0 | 1 | null; package_size?: string | null; intake_priority?: string | null } | null> {
+  try {
+    const r = await fetch(`/api/jobs/${id}`, { credentials: "include" });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const job = d?.job ?? d;
+    return {
+      follow_up: job?.follow_up ?? null,
+      package_size: job?.package_size ?? null,
+      intake_priority: job?.intake_priority ?? null,
+    };
   } catch {
     return null;
   }
@@ -120,9 +153,11 @@ export default function AvailableJobsPage() {
   const [sortOrder, setSortOrder] = useState<"nearest" | "farthest">("nearest");
   const [urgencySort, setUrgencySort] = useState<"none" | "highFirst" | "lowFirst">("none");
   const [followUpFilter, setFollowUpFilter] = useState<"all" | "needs" | "no">("all");
+  const [packageSizeFilter, setPackageSizeFilter] = useState<"all" | PkgSize>("all");
 
   // Track which jobs we’ve already hydrated to avoid loops
   const hydratedIds = useRef<Set<number>>(new Set());
+  const hydratedDetails = useRef<Set<number>>(new Set());
 
   // Try auto-geolocation if already granted
   useEffect(() => {
@@ -153,8 +188,15 @@ export default function AvailableJobsPage() {
         setError(data?.error || "Failed to load jobs");
         setJobsRaw([]);
       } else {
-        setJobsRaw(Array.isArray(data.jobs) ? data.jobs : []);
+        // normalize any numeric strings to numbers
+        const rows = (Array.isArray(data.jobs) ? data.jobs : []).map((j) => ({
+          ...j,
+          lat: typeof j.lat === "string" ? parseFloat(j.lat) : j.lat,
+          lng: typeof j.lng === "string" ? parseFloat(j.lng) : j.lng,
+        }));
+        setJobsRaw(rows);
         hydratedIds.current.clear(); // reset hydration tracker after a fresh load
+        hydratedDetails.current.clear();
       }
     } catch {
       setError("Network error while loading jobs");
@@ -173,7 +215,9 @@ export default function AvailableJobsPage() {
   useEffect(() => {
     // if urgency sorting is requested OR we want to show the badge accurately, fetch missing intake_priority
     const need = jobsRaw.filter(
-      (j) => (j.intake_priority == null || String(j.intake_priority).trim() === "") && !hydratedIds.current.has(j.id)
+      (j) =>
+        (j.intake_priority == null || String(j.intake_priority).trim() === "") &&
+        !hydratedIds.current.has(j.id)
     );
     if (need.length === 0) return;
 
@@ -191,6 +235,52 @@ export default function AvailableJobsPage() {
             if (idx === -1) return row;
             const ip = results[idx];
             return ip == null ? row : { ...row, intake_priority: ip as any };
+          })
+        );
+      }
+    })();
+  }, [jobsRaw]);
+
+  // ---------- Hydrate follow_up / package_size when missing ----------
+  useEffect(() => {
+    const need = jobsRaw.filter((j) => {
+      const missingFollow = j.follow_up == null;
+      const missingSize = !normalizeSize(j.package_size);
+      return (missingFollow || missingSize) && !hydratedDetails.current.has(j.id);
+    });
+
+    if (need.length === 0) return;
+
+    (async () => {
+      const chunk = 5;
+      for (let i = 0; i < need.length; i += chunk) {
+        const slice = need.slice(i, i + chunk);
+        const results = await Promise.all(slice.map((j) => fetchJobDetails(j.id)));
+
+        // mark hydrated
+        slice.forEach((j) => hydratedDetails.current.add(j.id));
+
+        setJobsRaw((prev) =>
+          prev.map((row) => {
+            const idx = slice.findIndex((s) => s.id === row.id);
+            if (idx === -1) return row;
+            const d = results[idx];
+            if (!d) return row;
+
+            const next: JobRow = { ...row };
+
+            // only fill if still missing, don't override non-empty
+            if (next.follow_up == null && d.follow_up != null) next.follow_up = d.follow_up;
+            if (!normalizeSize(next.package_size) && d.package_size) next.package_size = d.package_size;
+
+            // keep intake synced if it was missing
+            if (
+              (next.intake_priority == null || String(next.intake_priority).trim() === "") &&
+              d.intake_priority != null
+            ) {
+              next.intake_priority = d.intake_priority as any;
+            }
+            return next;
           })
         );
       }
@@ -250,7 +340,8 @@ export default function AvailableJobsPage() {
   const displayed = useMemo(() => {
     let list = jobsRaw.map((j) => {
       const hasCoords = typeof j.lat === "number" && typeof j.lng === "number";
-      const distanceKm = userLoc && hasCoords ? haversineKm(userLoc, { lat: j.lat!, lng: j.lng! }) : null;
+      const distanceKm =
+        userLoc && hasCoords ? haversineKm(userLoc, { lat: j.lat!, lng: j.lng! }) : null;
       const u = normalizeUrgency(j.intake_priority); // ONLY intake_priority
       return { ...j, distanceKm, _urgency: u as Urgency | null };
     });
@@ -264,6 +355,11 @@ export default function AvailableJobsPage() {
       if (followUpFilter === "no") return !isCancelledDelivery;
       return true; // "all"
     });
+
+    // Package size filter
+    if (packageSizeFilter !== "all") {
+      list = list.filter((j: any) => normalizeSize(j.package_size) === packageSizeFilter);
+    }
 
     // Radius filter
     if (userLoc && applyRadius) {
@@ -281,8 +377,10 @@ export default function AvailableJobsPage() {
     // Distance sort
     if (userLoc) {
       list.sort((a: any, b: any) => {
-        const da = a.distanceKm, db = b.distanceKm;
-        const aKnown = da != null, bKnown = db != null;
+        const da = a.distanceKm,
+          db = b.distanceKm;
+        const aKnown = da != null,
+          bKnown = db != null;
         if (aKnown && !bKnown) return -1;
         if (!aKnown && bKnown) return 1;
         if (!aKnown && !bKnown) return 0;
@@ -291,7 +389,17 @@ export default function AvailableJobsPage() {
     }
 
     return list;
-  }, [jobsRaw, userLoc, radiusKm, applyRadius, sortOrder, urgencySort, role, followUpFilter]);
+  }, [
+    jobsRaw,
+    userLoc,
+    radiusKm,
+    applyRadius,
+    sortOrder,
+    urgencySort,
+    role,
+    followUpFilter,
+    packageSizeFilter,
+  ]);
 
   // ---------- Render ----------
   return (
@@ -334,7 +442,9 @@ export default function AvailableJobsPage() {
                 <span className="text-sm w-8 text-right">{radiusKm}</span>
               </div>
               {!userLoc && (
-                <p className="mt-2 text-xs text-gray-500">Tip: allow location in your browser to enable distance sorting.</p>
+                <p className="mt-2 text-xs text-gray-500">
+                  Tip: allow location in your browser to enable distance sorting.
+                </p>
               )}
               <div className="flex items-center gap-2 mt-2">
                 <input
@@ -344,7 +454,12 @@ export default function AvailableJobsPage() {
                   onChange={(e) => setApplyRadius(e.target.checked)}
                   disabled={!userLoc}
                 />
-                <label htmlFor="limit-radius" className={`text-sm ${!userLoc ? "text-gray-400" : ""}`}>Limit to radius</label>
+                <label
+                  htmlFor="limit-radius"
+                  className={`text-sm ${!userLoc ? "text-gray-400" : ""}`}
+                >
+                  Limit to radius
+                </label>
               </div>
             </div>
 
@@ -379,6 +494,23 @@ export default function AvailableJobsPage() {
               </select>
             </div>
 
+            {/* Package size filter */}
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-medium text-gray-500 mb-2">Filter by package size</div>
+              <select
+                value={packageSizeFilter}
+                onChange={(e) => setPackageSizeFilter(e.target.value as "all" | PkgSize)}
+                className="w-full rounded-md border px-3 py-2 text-sm"
+                aria-label="Filter by package size"
+              >
+                <option value="all">None</option>
+                <option value="tiny">Tiny</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+
             {/* Follow-up filter (admin only) */}
             {role === "admin" && (
               <div className="rounded-lg border p-3">
@@ -398,10 +530,16 @@ export default function AvailableJobsPage() {
           </div>
         </div>
 
-        {(loading || sessionLoading) && <p className="text-gray-500 bg-white border border-gray-200 rounded-lg px-4 py-3">Loading…</p>}
-        {!loading && !sessionLoading && error && <p className="text-gray-600 bg-white border border-gray-200 rounded-lg px-4 py-3">{error}</p>}
+        {(loading || sessionLoading) && (
+          <p className="text-gray-500 bg-white border border-gray-200 rounded-lg px-4 py-3">Loading…</p>
+        )}
+        {!loading && !sessionLoading && error && (
+          <p className="text-gray-600 bg-white border border-gray-200 rounded-lg px-4 py-3">{error}</p>
+        )}
         {!loading && !sessionLoading && !error && displayed.length === 0 && (
-          <p className="text-gray-600 bg-white border border-gray-200 rounded-lg px-4 py-3 text-center">No jobs match the current filters.</p>
+          <p className="text-gray-600 bg-white border border-gray-200 rounded-lg px-4 py-3 text-center">
+            No jobs match the current filters.
+          </p>
         )}
 
         {/* Job Cards */}
@@ -409,38 +547,74 @@ export default function AvailableJobsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {displayed.map((j: any) => {
               const ub = urgencyBadge(j._urgency as Urgency | null);
+              const sizeNorm = normalizeSize(j.package_size);
               return (
                 <div key={j.id} className="rounded-lg bg-white p-5 shadow-sm border border-gray-200">
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="font-semibold text-[#171e3a]">{j.name ? j.name : `Job #${j.id}`}</h2>
+                    <h2 className="font-semibold text-[#171e3a]">
+                      {j.name ? j.name : `Job #${j.id}`}
+                    </h2>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs rounded-full px-3 py-1 ${statusPill(j.progress_stage)}`}>{j.progress_stage ?? "unknown"}</span>
+                      <span className={`text-xs rounded-full px-3 py-1 ${statusPill(j.progress_stage)}`}>
+                        {j.progress_stage ?? "unknown"}
+                      </span>
                       <span className={`text-xs rounded-full px-2 py-1 ${ub.classes}`}>{ub.text}</span>
                     </div>
                   </div>
 
                   <div className="mt-3 space-y-1 text-sm text-gray-700">
-                    <p><span className="font-medium">Address:</span> {j.address ?? "—"}</p>
-                    <p><span className="font-medium">Size:</span> {j.package_size ?? "—"}</p>
+                    <p>
+                      <span className="font-medium">Address:</span> {j.address ?? "—"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Size:</span>{" "}
+                      {sizeNorm ? sizeNorm[0].toUpperCase() + sizeNorm.slice(1) : (j.package_size ?? "—")}
+                    </p>
                     {j.distanceKm != null && (
-                      <p><span className="font-medium">Distance:</span> {j.distanceKm.toFixed(1)} km</p>
+                      <p>
+                        <span className="font-medium">Distance:</span> {j.distanceKm.toFixed(1)} km
+                      </p>
                     )}
                     {role === "admin" && (
                       <p className="text-xs">
-                        Follow-up: <b>{((j.progress_stage ?? "").toLowerCase() === "cancelled_in_delivery") ? "Yes" : "No"}</b>
+                        Follow-up:{" "}
+                        <b>
+                          {j.follow_up === true || j.follow_up === 1
+                            ? "Yes"
+                            : j.follow_up === false || j.follow_up === 0
+                              ? "No"
+                              : (j.progress_stage ?? "").toLowerCase() === "cancelled_in_delivery"
+                                ? "Yes"
+                                : "No"}
+                        </b>
                       </p>
                     )}
                   </div>
 
                   <div className="mt-4 flex items-center gap-3">
-                    <Link href={`/dashboard/job/${j.id}`} className="px-3 py-2 rounded border hover:bg-gray-50">View Details</Link>
+                    <Link
+                      href={`/dashboard/job/${j.id}`}
+                      className="px-3 py-2 rounded border hover:bg-gray-50"
+                    >
+                      View Details
+                    </Link>
 
                     {role === "admin" ? (
-                      <button type="button" onClick={() => removeJob(j.id)} className="px-3 py-2 rounded bg-red-700 text-white hover:bg-red-800" title="Delete Job">
+                      <button
+                        type="button"
+                        onClick={() => removeJob(j.id)}
+                        className="px-3 py-2 rounded bg-red-700 text-white hover:bg-red-800"
+                        title="Delete Job"
+                      >
                         Delete Job
                       </button>
                     ) : (
-                      <button type="button" onClick={() => reserve(j.id)} className="px-3 py-2 rounded bg-red-700 text-white hover:bg-red-800" title="Reserve Job">
+                      <button
+                        type="button"
+                        onClick={() => reserve(j.id)}
+                        className="px-3 py-2 rounded bg-red-700 text-white hover:bg-red-800"
+                        title="Reserve Job"
+                      >
                         Reserve Job
                       </button>
                     )}
