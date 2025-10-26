@@ -1,24 +1,11 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![GoodRun LOGO][goodrun-logo]][goodrun-url]
+  [![GoodRun LOGO][goodrun-logo]][goodrun-url]
 
-IT Project Semester 2, 2025  
+*IT Project Semester 2, 2025*  
+  
 Our team is working with **Medical Pantry** on the development of GoodRun - a delivery web application designed to provide a simpler, more streamlined and reliable platform for volunteers to carry out deliveries. The platform enables staff to publish and manage delivery items; volunteers to easily view and accept pick up requests, access route navigation and item status tracking. GoodRun aims to enhance efficiency and transparency, while also supporting Medical Pantry’s mission and strengthening its community impact.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-### Built With
-
-This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
-
-* [![Next][Next.js]][Next-url]
-* [![React][React.js]][React-url]
-* [![PostgreSQL][PostgreSQL]][PostgreSQL-url]]
-* [![Render][Render]][Render-url]
-* [![Tailwindcss][Tailwindcss]][Tailwindcss-url]
-* [![Leaflet][Leaflet]][Leaflet-url]
-* [![GraphHopper][GraphHopper]][GraphHopper-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -41,12 +28,21 @@ This section should list any major frameworks/libraries used to bootstrap your p
     </li>
     <li><a href="#deployment">Deployment</a></li>
     <li><a href="#project-architecture">Project Architecture</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
+
+### Built With
+
+This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
+
+* [![Next][Next.js]][Next-url]
+* [![React][React.js]][React-url]
+* [![PostgreSQL][PostgreSQL]][PostgreSQL-url]
+* [![Render][Render]][Render-url]
+* [![Tailwindcss][Tailwindcss]][Tailwindcss-url]
+* [![Leaflet][Leaflet]][Leaflet-url]
+* [![GraphHopper][GraphHopper]][GraphHopper-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -56,11 +52,10 @@ Here is a guide on setting up the project **locally**.
 
 ### Database Setup
 
-The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. All developers share the same database for testing purposes. Here is a guide for usage:
+The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. Connect to run locally.
 
 1. **Create `.env.local` file at root of repository**
 ```.env.local
-// .env.local
 DATABASE_URL=[see below link]
 NODE_ENV=development
 NEXTAUTH_SECRET=[generate your own key]     // Command to generate: openssl rand -base64 32
@@ -68,13 +63,13 @@ NEXTAUTH_URL=http://localhost:3000
 GEOCODING_KEY=[see below link]        
 NEXT_PUBLIC_GRAPHHOPPER_KEY=[see below link]
 ```
-> visit [this link][goodrun-onrender-url] and scroll to the **Environment Variables** section to fill in information in [see below link].
+> Visit [this link][goodrun-onrender-url] and scroll to the **Environment Variables** section to fill in information in [see below link].
 
 2. **Database Management**
 
 To manage the database system, you can either download the **pgAdmin4** software, or connect through **command line** (brew install postgresql and connect).
 
-Visit [this link][goodrun-db-url] to view connection credentials and detailed documentations.
+> Visit [this link][goodrun-db-url] to view connection credentials and detailed documentations.
 
 3. **Test data**
 
@@ -185,7 +180,7 @@ List of resources we have used in our project!
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [goodrun-logo]: https://github.com/esthertea/Team-17-Medical-Pantry/blob/development/public/grLogo-transparent.png
-[goodrun-url]: ttps://team-17-medical-pantry.onrender.com
+[goodrun-url]: https://team-17-medical-pantry.onrender.com
 
 [Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
 [Next-url]: https://nextjs.org/
