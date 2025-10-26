@@ -1,13 +1,7 @@
-<!-- ABOUT THE PROJECT -->
-## About The Project
+# GoodRun by Medical Pantry
 
-  [![GoodRun LOGO][goodrun-logo]][goodrun-url]
-
-*IT Project Semester 2, 2025*  
+[![GoodRun LOGO][goodrun-logo]][goodrun-url]
   
-Our team is working with **Medical Pantry** on the development of GoodRun - a delivery web application designed to provide a simpler, more streamlined and reliable platform for volunteers to carry out deliveries. The platform enables staff to publish and manage delivery items; volunteers to easily view and accept pick up requests, access route navigation and item status tracking. GoodRun aims to enhance efficiency and transparency, while also supporting Medical Pantry’s mission and strengthening its community impact.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -23,7 +17,7 @@ Our team is working with **Medical Pantry** on the development of GoodRun - a de
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#database-setup">Database Setup</a></li>
-        <li><a href="#running-locally">Running Locally</a></li>
+        <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
     <li><a href="#deployment">Deployment</a></li>
@@ -31,6 +25,17 @@ Our team is working with **Medical Pantry** on the development of GoodRun - a de
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
+ 
+
+<!-- ABOUT THE PROJECT -->
+## About The Project
+
+*IT Project Semester 2, 2025*  
+  
+Our team is working with **Medical Pantry** on the development of GoodRun - a delivery web application designed to provide a simpler, more streamlined and reliable platform for volunteers to carry out deliveries. The platform enables staff to publish and manage delivery items; volunteers to easily view and accept pick up requests, access route navigation and item status tracking. GoodRun aims to enhance efficiency and transparency, while also supporting Medical Pantry’s mission and strengthening its community impact.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 ### Built With
 
@@ -52,10 +57,10 @@ Here is a guide on setting up the project **locally**.
 
 ### Database Setup
 
-The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. Connect to run locally.
+The GoodRun Volunteer App uses a PostgreSQL database hosted on Render. Connect to run locally.  
 
 1. **Create `.env.local` file at root of repository**
-```.env.local
+```bash
 DATABASE_URL=[see below link]
 NODE_ENV=development
 NEXTAUTH_SECRET=[generate your own key]     // Command to generate: openssl rand -base64 32
@@ -64,6 +69,7 @@ GEOCODING_KEY=[see below link]
 NEXT_PUBLIC_GRAPHHOPPER_KEY=[see below link]
 ```
 > Visit [this link][goodrun-onrender-url] and scroll to the **Environment Variables** section to fill in information in [see below link].
+
 
 2. **Database Management**
 
@@ -77,20 +83,25 @@ The test records were seeded through script runnning.
 
 Database schema and tables have been documented in the above link. Alternatively, you can find the seeded records for testing in `scripts/seedTestRecords.sql`, or retrieve table records directly through the dbms.
 
-> To test login the **passwords are all '000'** (saved as hashes in db).
+> To test login the **passwords are all '000'** 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Running Locally
+### Installation
 
-1. Install npm packages
-```bash
-npm install
-```
-2. Run the app on localhost
-```bash
-npm run dev
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/esthertea/Team-17-Medical-Pantry.git
+2. Navigate into the project directory:
+   ```bash
+   cd Team-17-Medical-Pantry
+3. Install npm packages
+   ```bash
+   npm install
+4. Run the app on localhost
+   ```bash
+   npm run dev
+
 3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 Website updates automatically with code changes.
 
